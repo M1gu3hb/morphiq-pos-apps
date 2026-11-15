@@ -6,7 +6,9 @@ tecleas tú; los PIN del personal están en `_PRIVADO`.
 Las apps abren **el POS de producción** a pantalla completa, imprimen directo (sin el diálogo del
 navegador), abren el cajón y se actualizan solas. Todo lo demás vive en la web.
 
-- **Descargas:** <https://github.com/M1gu3hb/morphiq-pos-apps/releases>
+- **Descargas:** en el navegador del aparato, teclea **don-poncho-apps.vercel.app** y toca el botón
+  resaltado (siempre trae la versión más nueva). Para un teléfono, escanea el QR de esa página.
+  También: <https://github.com/M1gu3hb/morphiq-pos-apps/releases>
 - Copia local: `D:\MIS PROYECTOS\MORPHIQ POS\Apps\`
 
 ## 1 · Windows (`POS-Don-Poncho-Setup-x.y.z.exe`)

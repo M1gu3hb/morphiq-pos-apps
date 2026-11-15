@@ -1,0 +1,25 @@
+{
+  "name": "morphiq-pos-descargas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "La página de descargas de las apps de un cliente, en Vercel",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "node construir.mjs",
+    "local": "node herramientas/servidor-local.mjs",
+    "test": "node --test \"pruebas/**/*.test.mjs\"",
+    "e2e": "playwright test -c e2e/playwright.config.mjs",
+    "humo": "node herramientas/humo.mjs"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.28.2",
+    "sharp": "0.35.5"
+  }
+}
