@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https:; base-uri 'none'; form-action 'none'"
+    />
+    <title>Sin internet · {nombre}</title>
+    <link rel="stylesheet" href="estilos.css" />
+  </head>
+  <body>
+    <main class="centro">
+      <img src="icono.png" alt="" width="132" height="132" />
+      <h1>Sin internet, reintentando…</h1>
+      <p><span data-marca="nombre">POS</span> necesita internet. En cuanto vuelva, se abre solo.</p>
+      <div class="pulso" aria-hidden="true"></div>
+      <p id="estado" role="status" aria-live="polite"></p>
+      <div class="acciones">
+        <button id="reintentar" class="principal" type="button">Reintentar ahora</button>
+        <button id="reimprimir" type="button" hidden>Reimprimir el último ticket</button>
+        <button id="diagnostico" type="button">Diagnóstico</button>
+      </div>
+    </main>
+
+    <script src="marca.js"></script>
+    <script src="comun.js"></script>
+    <script src="sin-internet.js"></script>
+  </body>
+</html>

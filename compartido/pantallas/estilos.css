@@ -1,0 +1,286 @@
+/* Las pantallas propias de la app (Diagnóstico, Sin internet, Acerca de). Sin red: nada externo. */
+:root {
+  --fondo: #161614;
+  --texto: #f4efe6;
+  --acento: #c0392b;
+  /* Valores fijos primero: los POS viejos traen navegadores sin `color-mix` (Chromium < 111). */
+  --tenue: #a9a59d;
+  --linea: #3a3936;
+  --tarjeta: #21211f;
+  --bien: #7fbf6a;
+  --mal: #e8836f;
+  --letra: 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Noto Sans', system-ui, sans-serif;
+  --mono: 'Cascadia Mono', Consolas, 'Roboto Mono', monospace;
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root {
+    --tenue: color-mix(in srgb, var(--texto) 62%, var(--fondo));
+    --linea: color-mix(in srgb, var(--texto) 16%, var(--fondo));
+    --tarjeta: color-mix(in srgb, var(--texto) 5%, var(--fondo));
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--letra);
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  padding: clamp(16px, 4vw, 44px);
+}
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--acento);
+  margin-bottom: 24px;
+}
+
+.cabecera img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 14px;
+  flex: none;
+}
+
+.cabecera h1 {
+  margin: 0;
+  font-size: clamp(22px, 3.4vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.cabecera p {
+  margin: 4px 0 0;
+  color: var(--tenue);
+  font-size: 15px;
+}
+
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+
+.tarjeta {
+  background: var(--tarjeta);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.tarjeta.ancha {
+  grid-column: 1 / -1;
+}
+
+.tarjeta h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tenue);
+}
+
+.dato {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 5px 0;
+  border-top: 1px dashed var(--linea);
+}
+
+.dato:first-of-type {
+  border-top: 0;
+}
+
+.dato span:first-child {
+  color: var(--tenue);
+  flex: none;
+}
+
+.dato span:last-child {
+  text-align: right;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.grande {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  padding: 12px 0;
+  border-top: 1px solid var(--linea);
+}
+
+.fila:first-of-type {
+  border-top: 0;
+}
+
+.fila strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.fila small {
+  display: block;
+  color: var(--tenue);
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1px solid var(--linea);
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--texto);
+}
+
+button:focus-visible {
+  outline: 3px solid var(--texto);
+  outline-offset: 2px;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button[disabled] {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+button.principal {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0 8px;
+}
+
+.aviso {
+  margin: 0;
+  padding: 6px 0;
+  color: var(--mal);
+}
+
+.bien {
+  color: var(--bien);
+}
+
+.mal {
+  color: var(--mal);
+}
+
+.estado {
+  min-height: 1.5em;
+  margin: 10px 0 0;
+  font-weight: 600;
+}
+
+.vacio {
+  color: var(--tenue);
+  margin: 0;
+}
+
+.firma {
+  margin-top: 32px;
+  color: var(--tenue);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+/* Sin internet: una sola cosa en la pantalla. */
+.centro {
+  min-height: calc(100vh - 2 * clamp(16px, 4vw, 44px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.centro img {
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  border-radius: 24px;
+}
+
+.centro h1 {
+  margin: 8px 0 0;
+  font-size: clamp(26px, 5vw, 44px);
+  line-height: 1.1;
+}
+
+.centro p {
+  margin: 0;
+  color: var(--tenue);
+  max-width: 34ch;
+}
+
+.pulso {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--acento);
+  animation: pulso 1.4s ease-in-out infinite;
+}
+
+@keyframes pulso {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulso {
+    animation: none;
+  }
+}

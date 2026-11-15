@@ -1,0 +1,20 @@
+{
+  "id": "don-poncho",
+  "nombre": "POS Don Poncho",
+  "nombreCorto": "Don Poncho",
+  "appId": "mx.morphiq.pos.donponcho",
+  "url": "https://pos-don-poncho.vercel.app/n/don-poncho/login-pos",
+  "dominio": "pos-don-poncho.vercel.app",
+  "colores": {
+    "fondo": "#161614",
+    "texto": "#f4efe6",
+    "acento": "#c0392b"
+  },
+  "icono": "don-poncho/icono-512.png",
+  "logo": "don-poncho/logo.png",
+  "releases": {
+    "repo": "M1gu3hb/morphiq-pos-apps",
+    "canal": "canal-don-poncho"
+  },
+  "firma": "Hecho por MORPHIQ"
+}

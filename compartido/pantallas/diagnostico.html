@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Diagnóstico · {nombre}</title>
+    <link rel="stylesheet" href="estilos.css" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <img src="icono.png" alt="" width="72" height="72" />
+      <div>
+        <h1>Diagnóstico de este aparato</h1>
+        <p><span data-marca="nombre">POS</span> · versión <span id="version">…</span></p>
+      </div>
+    </header>
+
+    <main>
+      <p id="cargando" class="vacio" role="status">Leyendo el aparato…</p>
+      <div id="contenido" class="rejilla" hidden></div>
+
+      <div class="barra">
+        <button id="abrir-pos" class="principal" type="button">Abrir el POS</button>
+        <button id="actualizar" type="button">Buscar actualización</button>
+        <button id="copiar" type="button">Copiar diagnóstico</button>
+        <button id="releer" type="button">Volver a leer</button>
+      </div>
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+    </main>
+
+    <p class="firma" data-marca="firma"></p>
+
+    <script src="marca.js"></script>
+    <script src="comun.js"></script>
+    <script src="diagnostico.js"></script>
+  </body>
+</html>

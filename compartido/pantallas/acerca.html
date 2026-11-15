@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Acerca de · {nombre}</title>
+    <link rel="stylesheet" href="estilos.css" />
+  </head>
+  <body>
+    <main class="centro">
+      <img src="icono.png" alt="" width="132" height="132" />
+      <h1 data-marca="nombre">POS</h1>
+      <p>Versión <span data-marca="version"></span></p>
+      <p id="estado" role="status" aria-live="polite"></p>
+      <div class="acciones">
+        <button id="abrir-pos" class="principal" type="button">Volver al POS</button>
+        <button id="actualizar" type="button">Buscar actualización</button>
+        <button id="diagnostico" type="button">Diagnóstico</button>
+      </div>
+      <p class="firma" data-marca="firma"></p>
+    </main>
+
+    <script src="marca.js"></script>
+    <script src="comun.js"></script>
+    <script src="acerca.js"></script>
+  </body>
+</html>

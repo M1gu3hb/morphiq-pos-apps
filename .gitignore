@@ -1,0 +1,27 @@
+node_modules/
+dist/
+salida/
+generado/
+*.log
+.DS_Store
+Thumbs.db
+
+# Android
+android/android/.gradle/
+android/android/build/
+android/android/app/build/
+android/android/local.properties
+android/android/app/src/main/assets/public/
+android/android/capacitor-cordova-android-plugins/
+android/www/
+
+# Las llaves NUNCA entran aquí: viven fuera del repo (ver README).
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+keystore.properties
+firma.properties
+.env
+.env.*
