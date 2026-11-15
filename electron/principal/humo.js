@@ -7,6 +7,8 @@
 const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
+const { comprobarMarcos } = require('./humo-marcos');
+const { comprobarElectronUpdater } = require('./humo-actualizador');
 
 const ESPERA_DE_PINTADO_MS = 2500;
 const TOPE_DE_CARGA_MS = 45_000;
@@ -147,6 +149,13 @@ async function correrHumo({ electron, cliente, rutas, almacen, registrar, crearA
     return { externos };
   });
 
+  await paso('c1) Un iframe no puede navegar fuera del origen permitido (sí a about:blank y srcdoc)', async () => {
+    const r = await comprobarMarcos({ BrowserWindow, esperar });
+    exigir(r.ajena === 'about:blank', `El iframe navegó a ${r.ajena}`);
+    exigir(r.srcdoc === 'about:srcdoc' && r.enBlanco === 'about:blank', `srcdoc/blank: ${JSON.stringify(r)}`);
+    return r;
+  });
+
   await paso('c2) Sin internet: una carga fallida muestra nuestra pantalla, no la de Chromium', async () => {
     web().loadURL('https://no-existe-morphiq.invalid/').catch(() => {});
     await esperarHasta(() => web().getURL().endsWith('/sin-internet.html') && !web().isLoading(), 20_000, 'que aparezca «Sin internet»');
@@ -266,6 +275,14 @@ async function correrHumo({ electron, cliente, rutas, almacen, registrar, crearA
     } finally {
       await new Promise((listo) => servidor.close(listo));
     }
+  });
+
+  await paso('g) electron-updater real (app empaquetada) ve una versión más nueva y no la misma', async () => {
+    const r = await comprobarElectronUpdater({ app: electron.app, versionActual: cliente.version, versionMasNueva: '99.0.0' });
+    if (r.omitido) return r;
+    exigir(r.mismaVersion.disponible === false, `La misma versión no es una actualización: ${JSON.stringify(r)}`);
+    exigir(r.versionMasNueva.disponible === true && r.versionMasNueva.anunciada === '99.0.0', `La 99.0.0 sí lo es: ${JSON.stringify(r)}`);
+    return r;
   });
 
   fs.writeFileSync(salida('humo-resultado.json'), `${JSON.stringify({ pasos, externos }, null, 2)}\n`);

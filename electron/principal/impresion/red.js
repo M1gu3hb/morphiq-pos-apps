@@ -2,6 +2,7 @@
 /** Envío por red: un socket TCP a la impresora (puerto 9100 por omisión), por bloques y con pausa. */
 const net = require('node:net');
 const { ErrorDeImpresion, mensajeDeTiempo, traducirError } = require('./errores');
+const { exigirDireccionPrivada } = require('./direccion');
 
 const PUERTO_POR_OMISION = 9100;
 const BLOQUE_POR_OMISION = 4096;
@@ -13,11 +14,14 @@ const pausa = (ms) => new Promise((listo) => setTimeout(listo, ms));
 
 /**
  * Abre el socket con un plazo total. Si el plazo vence, destruye el socket y falla con `TIEMPO`.
+ * El `host` TIENE que ser un literal IP de la red local (`NO_SOPORTADO` si no): nunca se consulta un
+ * DNS y se conecta exactamente al literal que se validó. Es la última barrera; el servicio ya lo revisó.
  * @returns {Promise<{ socket: net.Socket, vencido: () => boolean, soltar: () => void }>}
  */
 function conectar({ host, puerto, esperaMs }) {
   return new Promise((resolver, rechazar) => {
-    const socket = net.connect({ host, port: puerto });
+    const literal = exigirDireccionPrivada(host);
+    const socket = net.connect({ host: literal, port: puerto });
     let seVencio = false;
     const temporizador = setTimeout(() => {
       seVencio = true;

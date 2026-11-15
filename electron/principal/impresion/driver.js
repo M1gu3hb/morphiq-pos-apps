@@ -3,6 +3,11 @@
  * Impresión por el driver de Windows, sin diálogo: una ventana OCULTA carga el HTML y
  * `webContents.print({ silent: true, deviceName, ... })`. Sólo documentos `html`.
  * Compatible con Electron 22: `print(opciones, callback)`.
+ *
+ * La ventana tiene JavaScript APAGADO (`webPreferences.javascript: false`): el HTML del ticket es
+ * maquetación estática (texto, estilos e imágenes `data:`) y no necesita ejecutar nada. Por lo mismo
+ * el alto del contenido NO se mide con `executeJavaScript` (que con JS apagado falla), sino con el
+ * protocolo de depuración (`Page.getLayoutMetrics`), que lee el diseño sin correr código de la página.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -28,6 +33,18 @@ function opcionesDeImpresion({ nombre, anchoMm, altoPx }) {
   };
 }
 
+/** El alto del documento cargado, en píxeles CSS, leído del motor de diseño sin ejecutar JavaScript de la página. */
+async function medirAltoEnPixeles(contenidos) {
+  const depurador = contenidos.debugger;
+  depurador.attach('1.3');
+  try {
+    const { cssContentSize, contentSize } = await depurador.sendCommand('Page.getLayoutMetrics');
+    return (cssContentSize ?? contentSize).height;
+  } finally {
+    depurador.detach();
+  }
+}
+
 /**
  * @param {{ BrowserWindow: typeof import('electron').BrowserWindow, carpetaTemporal: string }} entorno
  * @returns {(args: { nombre: string, html: string, anchoMm: number, esperaMs: number }) => Promise<{ bytes: number }>}
@@ -42,6 +59,7 @@ function crearImpresorPorDriver({ BrowserWindow, carpetaTemporal }) {
       width: Math.ceil((anchoMm / 25.4) * 96),
       height: 800,
       webPreferences: {
+        javascript: false,
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
@@ -55,7 +73,7 @@ function crearImpresorPorDriver({ BrowserWindow, carpetaTemporal }) {
     try {
       const trabajo = (async () => {
         await ventana.loadFile(archivo);
-        const altoPx = await ventana.webContents.executeJavaScript('document.documentElement.scrollHeight', true);
+        const altoPx = await medirAltoEnPixeles(ventana.webContents);
         await new Promise((listo, fallo) => {
           ventana.webContents.print(opcionesDeImpresion({ nombre, anchoMm, altoPx }), (exito, motivo) => {
             if (exito) listo();
@@ -84,4 +102,4 @@ function erroresDelMotivo(motivo) {
   return new ErrorDeImpresion('DESCONOCIDO', texto === '' ? 'No se pudo imprimir' : `No se pudo imprimir (${texto})`);
 }
 
-module.exports = { crearImpresorPorDriver, opcionesDeImpresion, altoEnMicras, erroresDelMotivo };
+module.exports = { crearImpresorPorDriver, opcionesDeImpresion, altoEnMicras, erroresDelMotivo, medirAltoEnPixeles };

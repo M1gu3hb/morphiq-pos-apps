@@ -13,13 +13,14 @@ const { ErrorDeImpresion } = require('../principal/impresion/errores');
 const base64 = (bytes) => Buffer.from(bytes).toString('base64');
 const FECHA = new Date(2026, 10, 14, 9, 5);
 
-/** Arma el servicio con un ayudante falso que anota los argumentos y lo que había en el archivo temporal. */
-function entorno({ perfil = null, fallaAyudante = null } = {}) {
+/** Arma el servicio con un ayudante falso que anota los argumentos y lo que había en el archivo temporal. `listar` contesta con `impresoras` y no cuenta como llamada. */
+function entorno({ perfil = null, fallaAyudante = null, impresoras = ['EPSON TM-T20', 'No existe', 'X'] } = {}) {
   const carpeta = fs.mkdtempSync(path.join(os.tmpdir(), 'morphiq-servicio-'));
   const llamadas = [];
   const eventos = [];
   const ayudante = {
     ejecutar: async (argumentos, opciones) => {
+      if (argumentos[0] === 'listar') return { ok: true, impresoras: impresoras.map((nombre) => ({ nombre })) };
       const archivo = argumentos.find((a) => a.endsWith('.bin'));
       llamadas.push({ argumentos, opciones, contenido: archivo ? fs.readFileSync(archivo) : null, archivo });
       if (fallaAyudante) throw fallaAyudante;
