@@ -212,10 +212,31 @@ test('GitHub se cae después: la última que conoce; reintenta al minuto, no en 
   assert.ok(llamadas.length > tras, 'pasado el minuto, sí');
 });
 
-test('sin GitHub y sin ninguna conocida: null, nunca una excepción', async () => {
-  const { fuente, estado } = fuenteCon({});
+test('sin GitHub y sin ninguna conocida: null, nunca una excepción, y no reintenta en cada visita', async () => {
+  const { fuente, estado, llamadas, reloj } = fuenteCon({});
   estado.caido = true;
   assert.equal(await fuente.obtener(), null);
+  const tras = llamadas.length;
+  reloj.t += REINTENTO_MS - 1;
+  assert.equal(await fuente.obtener(), null);
+  assert.equal(llamadas.length, tras);
+});
+
+test('GitHub colgado (no falla, no responde): la visita se lleva la conocida a tiempo', async () => {
+  const conocida = { windows: { version: '1.0.0', url: 'u-exe' }, android: { version: '1.0.0', url: 'u-apk' } };
+  const fuente = crearFuente({
+    repo: REPO,
+    canal: 'canal-don-poncho',
+    prefijo: 'don-poncho-v',
+    conocida,
+    fetch: () => new Promise(() => {}),
+    plazoVisitaMs: 30,
+    avisar: () => {},
+  });
+  const inicio = Date.now();
+  const v = await fuente.obtener();
+  assert.equal(v, conocida);
+  assert.ok(Date.now() - inicio < 1000, `tardó ${Date.now() - inicio} ms`);
 });
 
 test('un canal con un nombre de archivo raro no se ofrece', async () => {

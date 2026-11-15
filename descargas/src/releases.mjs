@@ -13,6 +13,8 @@
 
 export const VIGENCIA_MS = 5 * 60 * 1000;
 export const REINTENTO_MS = 60 * 1000;
+/** Lo más que espera una visita a GitHub si ya hay una versión conocida; la consulta sigue aparte. */
+export const PLAZO_VISITA_MS = 5000;
 const ESPERA_MAXIMA_MS = 4000;
 const RELEASES_POR_PAGINA = 100;
 
@@ -83,6 +85,7 @@ export function crearFuente({
   api = 'https://api.github.com',
   vigenciaMs = VIGENCIA_MS,
   reintentoMs = REINTENTO_MS,
+  plazoVisitaMs = PLAZO_VISITA_MS,
   avisar = (mensaje) => console.warn(mensaje),
 }) {
   let ultima = conocida;
@@ -243,9 +246,13 @@ export function crearFuente({
     return ultima;
   }
 
-  /** La versión vigente. Nunca falla: si GitHub no responde, da la última que conoce (o null). */
+  /**
+   * La versión vigente. Nunca falla: si GitHub no responde, da la última que conoce (o null). Si
+   * GitHub se cuelga en vez de fallar, la visita no espera más de `plazoVisitaMs`: se lleva la
+   * conocida y la consulta termina aparte.
+   */
   function obtener() {
-    if (ultima && ahora() < proximaConsulta) return Promise.resolve(ultima);
+    if (ahora() < proximaConsulta) return Promise.resolve(ultima);
     enCurso ??= refrescar()
       .catch((error) => {
         avisar(`descargas: no se pudo leer la versión (${error.message})`);
@@ -255,7 +262,12 @@ export function crearFuente({
       .finally(() => {
         enCurso = null;
       });
-    return enCurso;
+    if (!ultima) return enCurso;
+    let reloj;
+    const plazo = new Promise((resolver) => {
+      reloj = setTimeout(() => resolver(ultima), plazoVisitaMs);
+    });
+    return Promise.race([enCurso, plazo]).finally(() => clearTimeout(reloj));
   }
 
   return { obtener };

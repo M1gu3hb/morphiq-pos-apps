@@ -15,6 +15,8 @@ import { qrSvg } from './qr.mjs';
 
 const HOST = /^[A-Za-z0-9.-]+(?::\d{1,5})?$/;
 const PISTAS = 'Sec-CH-UA-Platform-Version';
+/** Un QR por host (la dirección corta, la del despliegue...): pocos, pero con tope. */
+const QRS_EN_MEMORIA = 20;
 
 function primero(valor) {
   const texto = Array.isArray(valor) ? valor[0] : valor;
@@ -33,7 +35,9 @@ export function crearApp({ cliente, estaticos, fuente, avisar = (m, e) => consol
   const estilos = hojaDeEstilos(cliente.colores);
   const huellaEstilos = createHash('sha256').update(estilos).digest('base64');
   const seguridad = {
-    'Content-Security-Policy': `default-src 'none'; style-src 'sha256-${huellaEstilos}'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+    // 'unsafe-inline' sólo lo usan los navegadores de CSP 1 (Chrome < 40, WebView de Android 5.0),
+    // que no entienden la huella; los demás lo ignoran porque hay huella.
+    'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline' 'sha256-${huellaEstilos}'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -54,6 +58,7 @@ export function crearApp({ cliente, estaticos, fuente, avisar = (m, e) => consol
 
   function qrPara(url) {
     if (!qrs.has(url)) {
+      if (qrs.size >= QRS_EN_MEMORIA) qrs.clear();
       qrs.set(
         url,
         qrSvg(url, {

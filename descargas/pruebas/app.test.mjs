@@ -84,7 +84,7 @@ test('la página: noindex en meta y cabecera, CSP sin scripts, pide la pista de 
   assert.equal(r.estado, 200);
   assert.match(r.cuerpo, /<meta name="robots" content="noindex, nofollow">/);
   assert.equal(r.cabeceras['X-Robots-Tag'], 'noindex, nofollow');
-  assert.match(r.cabeceras['Content-Security-Policy'], /default-src 'none'; style-src 'sha256-[A-Za-z0-9+/=]+'/);
+  assert.match(r.cabeceras['Content-Security-Policy'], /default-src 'none'; style-src 'unsafe-inline' 'sha256-[A-Za-z0-9+/=]+'/);
   assert.doesNotMatch(r.cabeceras['Content-Security-Policy'], /script-src/);
   assert.doesNotMatch(r.cuerpo, /<script/i);
   assert.equal(r.cabeceras['Critical-CH'], 'Sec-CH-UA-Platform-Version');
@@ -174,4 +174,12 @@ test('los ajustes de prueba: sólo fuera de Vercel y sólo hacia localhost', () 
   });
   assert.deepEqual(ajustesDePrueba({ VERCEL: '1', DESCARGAS_GITHUB: 'http://127.0.0.1:3211' }), {});
   assert.deepEqual(ajustesDePrueba({ DESCARGAS_GITHUB: 'https://evil.example' }), {});
+});
+
+test('el QR se guarda por host, con tope (un host inventado no llena la memoria)', async () => {
+  const responder = app();
+  for (let i = 0; i < 60; i += 1) {
+    const { cuerpo } = await pedir(responder, '/', { host: `h${i}.example` });
+    assert.match(cuerpo, new RegExp(`https://h${i}\.example/android`));
+  }
 });
