@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- El nombre de la app (app_name, title_activity_main) y el acceso directo salen del cliente:
+     los genera scripts/preparar.mjs en src/generado/res/values. -->
+<resources>
+    <string name="aviso_usb_titulo">Permiso del USB</string>
+    <string name="aviso_usb_texto">Para imprimir por el cable USB, Android te va a preguntar si esta app puede usar la impresora. Toca «Aceptar» en esa pregunta.</string>
+    <string name="aviso_bluetooth_titulo">Permiso de Bluetooth</string>
+    <string name="aviso_bluetooth_texto">Para imprimir por Bluetooth (o por la impresora integrada del POS) la app necesita ver los aparatos Bluetooth emparejados. Android te va a preguntar: toca «Permitir».</string>
+    <string name="aviso_instalar_titulo">Permiso para instalar la actualización</string>
+    <string name="aviso_instalar_texto">Android no deja instalar una actualización sin tu permiso. Se va a abrir un ajuste: activa «Permitir de esta fuente» para esta app, regresa y vuelve a tocar «Actualizar».</string>
+    <string name="actualizacion_titulo">Hay una actualización</string>
+    <string name="actualizacion_boton_si">Actualizar</string>
+    <string name="actualizacion_boton_despues">Después</string>
+    <string name="boton_entendido">Entendido</string>
+    <string name="boton_ahora_no">Ahora no</string>
+</resources>

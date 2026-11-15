@@ -1,0 +1,17 @@
+{
+  "name": "morphiq-pos-android",
+  "version": "0.0.0",
+  "private": true,
+  "description": "App de Android (Capacitor + plugin propio en Kotlin) de los POS de Morphiq.",
+  "scripts": {
+    "preparar": "node scripts/preparar.mjs don-poncho",
+    "construir": "node scripts/construir.mjs don-poncho",
+    "probar": "node scripts/probar.mjs",
+    "probar:puente": "node --test pruebas/*.test.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.6.10",
+    "@capacitor/cli": "7.6.10",
+    "@capacitor/core": "7.6.10"
+  }
+}

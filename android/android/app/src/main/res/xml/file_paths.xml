@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sólo la carpeta privada donde se baja el APK de la actualización: nada más se comparte. -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="actualizaciones" path="actualizaciones/" />
+</paths>
