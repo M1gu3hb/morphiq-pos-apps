@@ -21,6 +21,14 @@
  *     viene en el resultado (`ok: false`, `codigo`, `mensaje`). Sólo se rechaza la promesa por un
  *     mal uso (argumentos inválidos) o por `ORIGEN`.
  *  5. Los textos de `mensaje` van en español, cortos y sin tecnicismos; el `codigo` es estable.
+ *  6. Cuando una promesa SÍ se rechaza (mal uso u `ORIGEN`), el rechazo es un objeto plano
+ *     `{ name, codigo, message }` con `codigo` en `ORIGEN`, `ARGUMENTOS` o `DESCONOCIDO`, y no
+ *     necesariamente un `Error`: el aislamiento de contexto de Electron sólo deja pasar así el
+ *     código. Quien llama lee `message` del objeto, no pregunta `instanceof Error`.
+ *
+ * Ajustes que las apps leen además de los de `Ajustes`: `primerArranqueHecho` (las dos),
+ * `verificarSpooler` (Windows: `false` deja de preguntar al spooler si la impresora está lista
+ * antes de imprimir) y `pantallaDeInicio` (Android: la app como pantalla de inicio del aparato).
  */
 
 export type Plataforma = 'windows' | 'android';

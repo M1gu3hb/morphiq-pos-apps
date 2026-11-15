@@ -1,0 +1,121 @@
+# Instalar POS Don Poncho en cada aparato
+
+Para Miguel, el día de la instalación. Sin contraseñas aquí: la del laboratorio de hardware la
+tecleas tú; los PIN del personal están en `_PRIVADO`.
+
+Las apps abren **el POS de producción** a pantalla completa, imprimen directo (sin el diálogo del
+navegador), abren el cajón y se actualizan solas. Todo lo demás vive en la web.
+
+- **Descargas:** <https://github.com/M1gu3hb/morphiq-pos-apps/releases>
+- Copia local: `D:\MIS PROYECTOS\MORPHIQ POS\Apps\`
+
+## 1 · Windows (`POS-Don-Poncho-Setup-x.y.z.exe`)
+
+1. Copia el instalador al POS (USB o descárgalo ahí) y ábrelo.
+2. **«Windows protegió su PC»:** sale la primera vez porque el instalador no lleva firma de código.
+   Toca **«Más información»** y luego **«Ejecutar de todas formas»**.
+3. Se instala sola para ese usuario de Windows (no pide administrador) y deja el acceso directo
+   «POS Don Poncho» en el escritorio. Al terminar se abre.
+4. **La primera vez abre «Diagnóstico de este aparato».** Tómale una captura (o «Copiar
+   diagnóstico») y mándamela: con eso se decide cómo imprime ese POS. Luego **«Abrir el POS»**.
+5. Desde entonces abre directo el POS, a pantalla completa, y arranca sola con Windows.
+
+**Atajos del dueño** (la app no tiene barra de menú):
+
+| Teclas | Qué hace |
+| --- | --- |
+| `Ctrl` + `Shift` + `M` | El menú de la app: Diagnóstico · Buscar actualización · Pantalla completa sí/no · Recargar · Acerca de · Salir |
+| `Ctrl` + `Shift` + `Q` | Salir de la app |
+
+**Windows 7 u 8:** el instalador normal no corre ahí. Avísame: hay una variante con Electron 22 (la
+última que corre en esos Windows), que **ya no recibe parches de seguridad** y trae un navegador
+viejo en el que el POS puede no verse bien. Si el equipo aguanta, lo mejor es pasarlo a Windows 10.
+Para saber qué equipo es sin instalar nada, corre `diagnostico-windows.bat` (viene en el release) y
+mándame el archivo que deja en el escritorio.
+
+## 2 · Android (`POS-Don-Poncho-x.y.z.apk`)
+
+Necesita Android 6 o más nuevo.
+
+1. Copia el APK al aparato (USB, o descárgalo en su navegador) y tócalo.
+2. **«Apps desconocidas»:** Android pregunta si dejas instalar apps a ese navegador o a ese
+   administrador de archivos. Toca **«Ajustes»**, enciende **«Permitir desde esta fuente»**, vuelve
+   atrás y toca **«Instalar»**.
+3. Abre «POS Don Poncho». **La primera vez abre «Diagnóstico de este aparato»:** captura y mándamela.
+   Luego **«Abrir el POS»**.
+4. Para volver al Diagnóstico después: **mantén presionado el ícono** de la app → «Diagnóstico».
+
+**Impresora por USB:** al conectarla (o al tocar «Dar permiso» en Diagnóstico) Android pregunta
+«¿Permitir que POS Don Poncho acceda al dispositivo USB?». Marca **«Usar siempre»** y acepta.
+
+**Impresora por Bluetooth** (también la integrada de los POS tipo Sunmi, «InnerPrinter»):
+
+1. Ajustes de Android → Bluetooth → enciéndelo y **empareja** la impresora (el código suele ser
+   `0000` o `1234`; la «InnerPrinter» casi siempre ya viene emparejada).
+2. En la app, la primera vez pide el permiso de **«dispositivos cercanos»**: acéptalo.
+3. Vuelve a Diagnóstico y toca «Volver a leer»: la impresora aparece en la lista.
+
+## 3 · Dejar lista la impresión (el laboratorio)
+
+En el POS, entra como dueño o administrador:
+
+1. **Configuración → Operación**, hasta abajo: **«Hardware y pruebas de impresión»**.
+2. Dice «Sólo tu proveedor MORPHIQ puede entrar aquí»: teclea la contraseña del proveedor. El
+   permiso dura 30 minutos en ese aparato. Cinco fallos y hay que esperar 15 minutos.
+3. **Elige la conexión y la impresora** (las que ese aparato no puede aparecen apagadas y dicen por
+   qué). Para una de red, su IP y el puerto 9100.
+4. **«Página de prueba».** Si sale, la conexión sirve.
+5. **«Regla de calibración».** En el papel, mira hasta qué número llega la regla completa: 384 (58 mm),
+   512 o 576 (80 mm). Pon ese número en «Puntos». El cuadro debe medir 10 × 10 mm; si mide más, la
+   impresora es de 180 dpi.
+6. **«Vista previa de impresión»:** enseña, sin gastar papel, la imagen exacta que va a salir junto
+   al ticket de la pantalla.
+7. **«Ticket de ejemplo»** (no crea ninguna venta). Debe salir igual que en la pantalla, con acentos
+   y ñ. Si el corte se come el final, sube «Líneas antes del corte». Si la impresora se atora o
+   escupe basura, baja «Filas por franja» y el «Bloque», o sube la «Pausa».
+8. **El cajón:** enciende «Este aparato tiene cajón», prueba el pin 2 y, si no abre, el 5.
+9. **«Guardar como perfil de este aparato».** Desde ahí el personal ve en Configuración → Impresión
+   «Impresora lista ✓», y la Caja imprime directo.
+10. **Otro POS igual:** «Exportar» el perfil (un archivo `.json`), llévalo al otro aparato, entra a su
+    laboratorio y «Importar».
+
+Lo que ve el personal (Configuración → Impresión): el estado, «Página de prueba» y «Abrir cajón». No
+pueden cambiar el perfil.
+
+## 4 · La lista corta por POS
+
+Marca cada una en cada aparato:
+
+1. Instalar.
+2. Abrir (sale Diagnóstico; captura).
+3. Entrar con PIN.
+4. Página de prueba.
+5. Ticket de ejemplo (sale igual que en la pantalla).
+6. Abrir el cajón.
+7. Cortar el internet (sale «Sin internet, reintentando…») y volver (regresa solo al POS).
+8. Reiniciar el POS: en Windows la app arranca sola.
+9. Actualizar: cuando haya versión nueva, llega el aviso «POS Don Poncho tiene una actualización».
+   En Windows se instala sola al cerrar (o «Reiniciar ahora»); en Android hay que tocar «Actualizar»
+   y luego «Instalar» (Android no deja instalar a escondidas).
+
+## 5 · Si algo falla
+
+| Qué pasa | Qué hacer |
+| --- | --- |
+| «Sin papel», «Tapa abierta», «Impresora desconectada» | Arréglalo en la impresora y toca «Reintentar»: sale el mismo ticket, no uno repetido. |
+| «No respondió en 10 s» | Revisa el cable o el Bluetooth. Mientras, «Imprimir con el navegador». |
+| El ticket sale con letras raras o basura | La impresora no entiende esa forma de imprimir: en el laboratorio prueba «por columnas (ESC \*)» o, en Windows, «driver de Windows». |
+| El ticket sale cortado a la derecha | «Puntos» es más grande que lo que imprime esa impresora: vuelve a la regla de calibración. |
+| El cajón no abre | Pin 2 ↔ 5 en el laboratorio; revisa que el cable del cajón vaya a la impresora. |
+| En Windows dice «fuera de línea» y no imprime aunque sí está conectada | Algunos drivers lo dicen mal. Avísame: se apaga esa revisión para ese aparato. |
+| La app no abre el POS | «Sin internet, reintentando…» vuelve sola. Si no, `Ctrl`+`Shift`+`M` → Recargar. |
+| No imprime nada directo | Siempre queda el navegador: el botón «Imprimir con el navegador» abre el diálogo de siempre. |
+| Reimprimir sin internet | En la pantalla «Sin internet»: «Reimprimir el último ticket» (sale marcado como reimpresión). |
+
+Un error de impresión **nunca deshace el cobro**: la venta ya quedó; lo que falta es el papel.
+
+## 6 · Las llaves
+
+El keystore de Android y su archivo de firma están en `D:\MIS PROYECTOS\MORPHIQ POS\_PRIVADO\apps\`.
+**Respáldalos fuera de la laptop (USB o Drive).** Si se pierde el keystore, la APK ya no se puede
+actualizar: habría que desinstalarla y reinstalarla a mano en cada POS.

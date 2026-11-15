@@ -1,6 +1,8 @@
 node_modules/
 dist/
 salida/
+salida-legado/
+compilado/
 generado/
 *.log
 .DS_Store
