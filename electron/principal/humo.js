@@ -27,10 +27,26 @@ function exigir(condicion, mensaje) {
   if (!condicion) throw new Error(mensaje);
 }
 
+/**
+ * La captura es EVIDENCIA, no una comprobación: con la ventana oculta y recién abierta, Chromium a
+ * veces no la da («UnknownVizError»), y eso tumbaba el paso antes de mirar lo que importa (pasó
+ * en la primera corrida de la app ya empaquetada). Se reintenta; si no sale, se anota y se sigue.
+ */
 async function capturar(web, ruta) {
-  const imagen = await web.capturePage();
-  exigir(!imagen.isEmpty(), `La captura salió vacía (${path.basename(ruta)})`);
-  fs.writeFileSync(ruta, imagen.toPNG());
+  let ultimo = 'salió vacía';
+  for (let intento = 1; intento <= 3; intento += 1) {
+    try {
+      const imagen = await web.capturePage();
+      if (!imagen.isEmpty()) {
+        fs.writeFileSync(ruta, imagen.toPNG());
+        return;
+      }
+    } catch (error) {
+      ultimo = error && error.message ? error.message : String(error);
+    }
+    await new Promise((resolver) => setTimeout(resolver, 400));
+  }
+  console.warn(`  (sin captura ${path.basename(ruta)}: ${ultimo})`);
 }
 
 /**
