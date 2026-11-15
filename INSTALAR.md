@@ -61,7 +61,13 @@ En el POS, entra como dueño o administrador:
 
 1. **Configuración → Operación**, hasta abajo: **«Hardware y pruebas de impresión»**.
 2. Dice «Sólo tu proveedor MORPHIQ puede entrar aquí»: teclea la contraseña del proveedor. El
-   permiso dura 30 minutos en ese aparato. Cinco fallos y hay que esperar 15 minutos.
+   permiso dura 30 minutos en ese aparato y sólo le sirve a quien tenía la sesión abierta (si
+   entra otra persona con su PIN, hay que teclearla otra vez). Cinco fallos y hay que esperar 15
+   minutos.
+   - Si en lugar de pedirla dice **«Este laboratorio todavía no tiene contraseña»**, el POS no
+     encontró la variable `PROVEEDOR_CLAVE_HASH` en Vercel (Production) o le llegó incompleta: no
+     sigas probando contraseñas; se arregla en Vercel y con un despliegue nuevo. Mientras tanto la
+     Caja imprime con el navegador, como siempre.
 3. **Elige la conexión y la impresora** (las que ese aparato no puede aparecen apagadas y dicen por
    qué). Para una de red, su IP y el puerto 9100.
 4. **«Página de prueba».** Si sale, la conexión sirve.
