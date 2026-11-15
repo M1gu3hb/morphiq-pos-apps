@@ -4,6 +4,7 @@
  * `MORPHIQ_LEGADO=1` arma la variante para Windows 7/8 (Electron 22, ia32, sufijo `-win7`, canal `win7`).
  */
 const cliente = require('./generado/cliente.json');
+const { afterPack } = require('./herramientas/fuses');
 
 const legado = process.env.MORPHIQ_LEGADO === '1';
 const ELECTRON_LEGADO = '22.3.27';
@@ -29,6 +30,8 @@ module.exports = {
     { from: 'ayudante/ayudante.ps1', to: 'ayudante/ayudante.ps1' },
   ],
   asar: true,
+  // Voltea los fuses de Electron en el .exe ya empaquetado (RunAsNode apagado, OnlyLoadAppFromAsar encendido…).
+  afterPack,
   win: {
     target: [{ target: 'nsis', arch: [legado ? 'ia32' : 'x64'] }],
     icon: 'generado/icono.png',

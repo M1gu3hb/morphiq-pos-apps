@@ -36,6 +36,19 @@ function decidirDestino({ url, contexto, pantallaCompleta }) {
   return u.protocol === 'https:' ? 'afuera' : 'bloqueado';
 }
 
+/** Los únicos destinos «sin origen» que un iframe puede tener: la página en blanco y su propio `srcdoc`. */
+const DESTINOS_VACIOS_DE_MARCO = new Set(['about:blank', 'about:srcdoc']);
+
+/**
+ * ¿Puede un iframe navegar a esta URL? Sólo al origen permitido (el dominio del cliente o una pantalla
+ * interna) o a `about:blank` / `about:srcdoc`. Nunca se manda al navegador del sistema: un iframe que
+ * quiere ir a otra parte simplemente se queda donde está.
+ */
+function marcoPuedeNavegar({ url, contexto }) {
+  if (typeof url === 'string' && DESTINOS_VACIOS_DE_MARCO.has(url)) return true;
+  return origenPermitido(url, contexto);
+}
+
 /**
  * Aplica la política a un `webContents`: sin webviews, sin ventanas nuevas, sin navegar fuera.
  * @param {import('electron').WebContents} contenidos
@@ -68,6 +81,16 @@ function aplicarPoliticaDeNavegacion(contenidos, deps) {
   };
   contenidos.on('will-navigate', alNavegar);
   contenidos.on('will-redirect', alNavegar);
+  // `will-navigate` sólo vigila el marco principal: los iframes se vigilan aparte. (Electron 22, la
+  // variante para Windows 7/8, no trae este evento: ahí el oyente simplemente nunca se dispara.)
+  contenidos.on('will-frame-navigate', (evento, urlAntigua, _enMismoDocumento, esMarcoPrincipalAntiguo) => {
+    const url = typeof evento.url === 'string' ? evento.url : urlAntigua;
+    const esMarcoPrincipal = typeof evento.isMainFrame === 'boolean' ? evento.isMainFrame : esMarcoPrincipalAntiguo;
+    if (esMarcoPrincipal || evento.isSameDocument === true) return;
+    if (marcoPuedeNavegar({ url, contexto })) return;
+    evento.preventDefault();
+    registrar(`Navegación de un iframe bloqueada: ${String(url).slice(0, 200)}`);
+  });
 }
 
 /** Pone los manejadores de permisos en una sesión (permisos pedidos y consultados). */
@@ -97,6 +120,7 @@ module.exports = {
   aplicarPermisos,
   aislarSesionDeImpresion,
   decidirDestino,
+  marcoPuedeNavegar,
   permisoConcedido,
   PERMISOS_CONCEDIDOS,
 };

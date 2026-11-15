@@ -1,6 +1,7 @@
 'use strict';
 /** Estado de una impresora de red con `DLE EOT n` (n = 1, 2 y 4), leyendo un byte de respuesta cada vez. */
 const { conectar, PUERTO_POR_OMISION } = require('./red');
+const { exigirDireccionPrivada } = require('./direccion');
 const { mensajeDeTiempo, traducirError, ErrorDeImpresion } = require('./errores');
 
 const DLE_EOT = (n) => Buffer.from([0x10, 0x04, n]);
@@ -39,9 +40,16 @@ function esRespuestaDeEstado(byte) {
  * @returns {Promise<object>} un `EstadoDeImpresora`; no rechaza: lo que falla se dice en `mensaje`
  */
 async function estadoPorRed({ host, puerto = PUERTO_POR_OMISION, esperaMs = 5000 }) {
+  let literal;
+  try {
+    literal = exigirDireccionPrivada(host);
+  } catch (error) {
+    // Una dirección que no es de la red local no se consulta: no está «fuera de línea», no se permite.
+    return { soportado: false, mensaje: traducirError(error).mensaje };
+  }
   let conexion;
   try {
-    conexion = await conectar({ host, puerto, esperaMs });
+    conexion = await conectar({ host: literal, puerto, esperaMs });
   } catch (error) {
     const { mensaje } = traducirError(error);
     return { soportado: true, enLinea: false, mensaje };

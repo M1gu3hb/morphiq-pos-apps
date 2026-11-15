@@ -12,6 +12,8 @@ const { paginaDePrueba, bytesDeCajon, renglonDeReimpresion } = require('./bytes'
 const { enviarPorRed, PUERTO_POR_OMISION } = require('./red');
 const { estadoPorRed } = require('./estado-red');
 const { ErrorDeImpresion, traducirError } = require('./errores');
+const { exigirDireccionPrivada } = require('./direccion');
+const { crearVerificadorDeImpresoras } = require('./instaladas');
 
 const BAUDIOS_POR_OMISION = 9600;
 const ESPERA_POR_OMISION_MS = 10_000;
@@ -64,6 +66,7 @@ function sinSoporte(conexion) {
  *   emitir: (evento: string, datos: unknown) => void,
  *   enviarPorRed?: typeof enviarPorRed,
  *   estadoPorRed?: typeof estadoPorRed,
+ *   verificador?: { exigirInstalada: (nombre: string) => Promise<void> },
  *   ahora?: () => Date,
  * }} dependencias
  */
@@ -72,6 +75,8 @@ function crearServicioDeImpresion(dependencias) {
   const porRed = dependencias.enviarPorRed ?? enviarPorRed;
   const estadoRed = dependencias.estadoPorRed ?? estadoPorRed;
   const ahora = dependencias.ahora ?? (() => new Date());
+  // Por spooler y por driver sólo se imprime en lo que Windows tiene instalado (DP-D125).
+  const { exigirInstalada } = dependencias.verificador ?? crearVerificadorDeImpresoras({ ayudante });
 
   /** Escribe los bytes a un archivo temporal, corre `fn(ruta)` y lo borra SIEMPRE. */
   async function conArchivoTemporal(bytes, fn) {
@@ -92,6 +97,7 @@ function crearServicioDeImpresion(dependencias) {
       if (destino.conexion !== 'driver') {
         throw new ErrorDeImpresion('NO_SOPORTADO', 'Los documentos html sólo se imprimen con la conexión «driver».');
       }
+      await exigirInstalada(destino.nombre);
       return imprimirPorDriver({ nombre: destino.nombre, html: documento.html, anchoMm: documento.anchoMm, esperaMs });
     }
     if (destino.conexion === 'driver') {
@@ -102,8 +108,10 @@ function crearServicioDeImpresion(dependencias) {
     const bloqueBytes = documento.bloqueBytes ?? BLOQUE_POR_OMISION;
     const pausaMs = documento.pausaMs ?? 0;
     if (destino.conexion === 'red') {
-      return porRed({ host: destino.host, puerto: destino.puerto, datos: bytes, bloqueBytes, pausaMs, esperaMs, alProgreso });
+      // Lo que se valida es lo mismo que se le da al socket: el literal ya limpio.
+      return porRed({ host: exigirDireccionPrivada(destino.host), puerto: destino.puerto, datos: bytes, bloqueBytes, pausaMs, esperaMs, alProgreso });
     }
+    if (destino.conexion === 'spooler') await exigirInstalada(destino.nombre);
     const verificarEstado = ajustes().verificarSpooler !== false;
     const comun = [String(bloqueBytes), String(pausaMs)];
     return conArchivoTemporal(bytes, async (ruta) => {
@@ -200,6 +208,7 @@ function crearServicioDeImpresion(dependencias) {
       if (destino.conexion === 'red') return estadoRed({ host: destino.host, puerto: destino.puerto });
       if (destino.conexion === 'spooler' || destino.conexion === 'driver') {
         try {
+          await exigirInstalada(destino.nombre);
           const r = await ayudante.ejecutar(['estado', destino.nombre], { esperaMs: 8000 });
           return { soportado: true, enLinea: !r.fueraDeLinea, sinPapel: r.sinPapel, tapaAbierta: r.tapaAbierta };
         } catch (error) {

@@ -92,11 +92,29 @@ test('red: si la impresora no deja de ser lenta, vence con TIEMPO', async () => 
   }
 });
 
-test('red: un host que no existe también falla con un código del contrato', async () => {
+test('red: un nombre de host ni se intenta (no hay DNS): NO_SOPORTADO al instante', async () => {
+  const inicio = Date.now();
   await assert.rejects(
     enviarPorRed({ host: 'no-existe.invalid', puerto: 9100, datos: Buffer.from('x'), esperaMs: 4000 }),
-    (e) => e.codigo === 'DESCONECTADA' || e.codigo === 'TIEMPO',
+    (e) => e.codigo === 'NO_SOPORTADO' && /dirección IP completa/.test(e.message),
   );
+  assert.ok(Date.now() - inicio < 500, 'no debe esperar a ningún DNS ni plazo');
+});
+
+test('red: una dirección pública no se conecta; el literal que se valida es el que usa el socket', async () => {
+  await assert.rejects(enviarPorRed({ host: '8.8.8.8', datos: Buffer.from('x') }), (e) => e.codigo === 'NO_SOPORTADO' && /red local/.test(e.message));
+  const srv = await servidorFalso();
+  try {
+    await enviarPorRed({ host: '[127.0.0.1]', puerto: srv.puerto, datos: Buffer.from('ok') });
+    assert.equal(srv.recibido().toString(), 'ok');
+  } finally {
+    await srv.cerrar();
+  }
+});
+
+test('estado: una dirección pública no se consulta y se dice por qué', async () => {
+  const e = await estadoPorRed({ host: '192.0.2.10', esperaMs: 2000 });
+  assert.deepEqual([e.soportado, /red local/.test(e.mensaje)], [false, true]);
 });
 
 test('estado: interpreta los tres bytes DLE EOT', () => {
