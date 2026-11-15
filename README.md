@@ -13,6 +13,7 @@ demás (pantallas, cobros, cortes) vive en la web del POS.
 | `electron/` | La app de Windows (`.exe`, instalador NSIS por usuario). |
 | `android/` | La app de Android (`.apk`, Capacitor y un plugin propio en Kotlin). |
 | `scripts/` | Preparar un cliente y publicar un release. |
+| `descargas/` | La página para bajar las apps desde cualquier navegador (Vercel): <https://don-poncho-apps.vercel.app>. |
 
 ## Este repositorio es público y no lleva ningún secreto
 
