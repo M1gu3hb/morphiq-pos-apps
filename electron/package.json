@@ -1,0 +1,22 @@
+{
+  "name": "morphiq-pos-electron",
+  "version": "0.1.0",
+  "description": "App de Windows (Electron) de los puntos de venta de Morphiq",
+  "private": true,
+  "main": "principal/main.js",
+  "scripts": {
+    "preparar": "node herramientas/preparar.js",
+    "ayudante": "node herramientas/compilar-ayudante.js",
+    "test": "node --test \"pruebas/**/*.test.js\"",
+    "humo": "electron . --prueba-humo",
+    "construir": "node herramientas/construir.js",
+    "construir:legado": "node herramientas/construir.js --legado"
+  },
+  "devDependencies": {
+    "electron": "45.3.2",
+    "electron-builder": "26.18.0"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  }
+}
