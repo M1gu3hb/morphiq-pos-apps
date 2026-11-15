@@ -1,0 +1,121 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+import groovy.json.JsonSlurper
+
+// Todo lo que cambia por cliente sale de android/generado/cliente.json (lo deja `npm run preparar`).
+def archivoCliente = file('../../generado/cliente.json')
+if (!archivoCliente.exists()) {
+    throw new GradleException('Falta android/generado/cliente.json. Corre «npm run preparar» (o «npm run construir») dentro de android/.')
+}
+def cliente = new JsonSlurper().parse(archivoCliente)
+def urlActualizacion = "https://github.com/${cliente.releases.repo}/releases/download/${cliente.releases.canal}/android.json"
+
+// Firma: la ruta del archivo con las llaves llega por MORPHIQ_FIRMA. Nunca vive en el repo.
+def rutaFirma = System.getenv('MORPHIQ_FIRMA')
+
+android {
+    namespace "mx.morphiq.pos.app"
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId cliente.appId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode cliente.versionCode as int
+        versionName cliente.version
+        buildConfigField 'String', 'CLIENTE_ID', "\"${cliente.id}\""
+        buildConfigField 'String', 'CLIENTE_NOMBRE', "\"${cliente.nombre}\""
+        buildConfigField 'String', 'CLIENTE_URL', "\"${cliente.url}\""
+        buildConfigField 'String', 'CLIENTE_DOMINIO', "\"${cliente.dominio}\""
+        buildConfigField 'String', 'URL_ACTUALIZACION', "\"${urlActualizacion}\""
+        aaptOptions {
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    sourceSets {
+        main {
+            // Íconos, nombre de la app y acceso directo generados por scripts/preparar.mjs.
+            res.srcDirs += 'src/generado/res'
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (rutaFirma) {
+                def archivo = file(rutaFirma)
+                if (archivo.exists()) {
+                    def llaves = new Properties()
+                    archivo.withInputStream { llaves.load(it) }
+                    storeFile file(llaves.getProperty('storeFile'))
+                    storePassword llaves.getProperty('storePassword')
+                    keyAlias llaves.getProperty('keyAlias')
+                    keyPassword llaves.getProperty('keyPassword')
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+
+    kotlinOptions {
+        jvmTarget = '21'
+    }
+
+    testOptions {
+        unitTests.all {
+            testLogging {
+                events 'passed', 'skipped', 'failed'
+                exceptionFormat 'full'
+            }
+        }
+    }
+}
+
+// Un release sin llaves nunca se firma con la de depuración: se detiene con un mensaje claro.
+gradle.taskGraph.whenReady { grafo ->
+    def pideRelease = grafo.allTasks.any { it.name.toLowerCase().contains('release') && it.path.startsWith(':app') }
+    if (pideRelease) {
+        if (!rutaFirma) {
+            throw new GradleException('Falta la variable de entorno MORPHIQ_FIRMA con la ruta del archivo de llaves (firma.properties). Sin ella no se compila el release.')
+        }
+        if (!file(rutaFirma).exists()) {
+            throw new GradleException('MORPHIQ_FIRMA apunta a un archivo que no existe.')
+        }
+    }
+}
+
+repositories {
+    flatDir {
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation project(':capacitor-android')
+    implementation project(':capacitor-cordova-android-plugins')
+    testImplementation "junit:junit:$junitVersion"
+    testImplementation "org.json:json:$orgJsonVersion"
+}
+
+apply from: 'capacitor.build.gradle'

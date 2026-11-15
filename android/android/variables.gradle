@@ -1,0 +1,17 @@
+ext {
+    minSdkVersion = 23
+    // Android 36 es el SDK instalado en esta máquina. El destino es 34 a propósito: desde el 35 Android
+    // obliga a dibujar bajo las barras y el teclado dejaría de empujar la página del POS.
+    compileSdkVersion = 36
+    targetSdkVersion = 34
+    androidxActivityVersion = '1.9.2'
+    androidxAppCompatVersion = '1.7.0'
+    androidxCoordinatorLayoutVersion = '1.2.0'
+    androidxCoreVersion = '1.15.0'
+    androidxFragmentVersion = '1.8.4'
+    coreSplashScreenVersion = '1.0.1'
+    androidxWebkitVersion = '1.12.1'
+    junitVersion = '4.13.2'
+    orgJsonVersion = '20240303'
+    cordovaAndroidVersion = '10.1.1'
+}
