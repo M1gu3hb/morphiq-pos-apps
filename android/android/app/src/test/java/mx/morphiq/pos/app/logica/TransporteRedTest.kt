@@ -85,12 +85,23 @@ class TransporteRedTest {
         }
     }
 
-    @Test fun `una direccion que no resuelve responde desconectada`() {
+    @Test fun `un nombre de host ya no se acepta y responde NO_SOPORTADO sin consultar ningun DNS`() {
         try {
             TransporteRed("impresora-que-no-existe.invalid", 9100).enviar(ByteArray(1), OpcionesDeEnvio(esperaMs = 1000)) {}
             fail("Debió fallar")
         } catch (error: ErrorDeImpresora) {
-            assertEquals(Codigo.DESCONECTADA, error.codigo)
+            assertEquals(Codigo.NO_SOPORTADO, error.codigo)
+        }
+    }
+
+    @Test fun `una direccion publica ni se intenta y responde NO_SOPORTADO`() {
+        for (host in listOf("8.8.8.8", "192.0.2.10", "::ffff:8.8.8.8")) {
+            try {
+                TransporteRed(host, 9100).enviar(ByteArray(1), OpcionesDeEnvio(esperaMs = 1000)) {}
+                fail("«$host» debió rechazarse")
+            } catch (error: ErrorDeImpresora) {
+                assertEquals(host, Codigo.NO_SOPORTADO, error.codigo)
+            }
         }
     }
 

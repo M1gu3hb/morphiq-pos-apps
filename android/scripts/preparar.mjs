@@ -8,7 +8,8 @@
  *    `generado/icono.png` y `www/` (las pantallas internas).
  * 2. Escribe `capacitor.config.json` (nada del cliente va escrito a mano en el código).
  * 3. Escribe los recursos de Android del cliente en `android/app/src/generado/res/`: nombre de la
- *    app, colores, ícono de lanzador (adaptable + clásico) y el acceso directo «Diagnóstico».
+ *    app, colores, ícono de lanzador (adaptable + clásico) y el acceso directo «Diagnóstico». Y en
+ *    `generado-debug/res/` lo propio de la variante de depuración («… · depuración» y su acceso directo).
  *
  * `applicationId`, `versionCode`, `versionName` y el dominio/URL/canal de actualización los lee
  * Gradle directo de `generado/cliente.json` (ver `android/app/build.gradle`).
@@ -21,6 +22,10 @@ import { fileURLToPath } from 'node:url';
 const AQUI = join(dirname(fileURLToPath(import.meta.url)), '..');
 const RAIZ = join(AQUI, '..');
 const RECURSOS = join(AQUI, 'android', 'app', 'src', 'generado', 'res');
+/** Lo que sólo lleva la variante de depuración (nombre visible y acceso directo con su paquete). */
+const RECURSOS_DEPURACION = join(AQUI, 'android', 'app', 'src', 'generado-debug', 'res');
+/** Debe coincidir con `applicationIdSuffix` del tipo de construcción `debug` en android/app/build.gradle. */
+export const SUFIJO_DEPURACION = '.debug';
 /** Acción del acceso directo «Diagnóstico»: la misma que reconoce MainActivity. */
 export const ACCION_DIAGNOSTICO = 'mx.morphiq.pos.app.DIAGNOSTICO';
 export const CLASE_ACTIVIDAD = 'mx.morphiq.pos.app.MainActivity';
@@ -72,7 +77,23 @@ export function valoresXml(cliente) {
 `;
 }
 
-export function atajosXml(cliente) {
+/** El nombre que ve quien tiene la variante de depuración: nunca se confunde con la buena. */
+export function nombreDeDepuracion(cliente) {
+  return `${cliente.nombre} · depuración`;
+}
+
+export function valoresDepuracionXml(cliente) {
+  const nombre = escaparXml(nombreDeDepuracion(cliente));
+  return `<?xml version="1.0" encoding="utf-8"?>
+<!-- GENERADO por scripts/preparar.mjs. Sólo la variante de depuración. No se edita a mano. -->
+<resources>
+    <string name="app_name">${nombre}</string>
+    <string name="title_activity_main">${nombre}</string>
+</resources>
+`;
+}
+
+export function atajosXml(cliente, paquete = cliente.appId) {
   return `<?xml version="1.0" encoding="utf-8"?>
 <!-- GENERADO por scripts/preparar.mjs. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
@@ -84,7 +105,7 @@ export function atajosXml(cliente) {
         android:shortcutLongLabel="@string/atajo_diagnostico_largo">
         <intent
             android:action="${ACCION_DIAGNOSTICO}"
-            android:targetPackage="${cliente.appId}"
+            android:targetPackage="${paquete}"
             android:targetClass="${CLASE_ACTIVIDAD}" />
     </shortcut>
 </shortcuts>
@@ -116,6 +137,9 @@ export function preparar(id) {
   escribir(join(RECURSOS, 'values', 'morphiq_cliente.xml'), valoresXml(cliente));
   escribir(join(RECURSOS, 'xml', 'shortcuts.xml'), atajosXml(cliente));
   escribir(join(RECURSOS, 'mipmap-anydpi-v26', 'ic_launcher.xml'), ICONO_ADAPTABLE);
+  rmSync(RECURSOS_DEPURACION, { recursive: true, force: true });
+  escribir(join(RECURSOS_DEPURACION, 'values', 'morphiq_depuracion.xml'), valoresDepuracionXml(cliente));
+  escribir(join(RECURSOS_DEPURACION, 'xml', 'shortcuts.xml'), atajosXml(cliente, `${cliente.appId}${SUFIJO_DEPURACION}`));
   mkdirSync(join(RECURSOS, 'mipmap-nodpi'), { recursive: true });
   mkdirSync(join(RECURSOS, 'drawable-nodpi'), { recursive: true });
   cpSync(icono, join(RECURSOS, 'mipmap-nodpi', 'ic_launcher.png'));

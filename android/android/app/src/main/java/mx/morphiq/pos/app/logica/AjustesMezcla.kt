@@ -7,6 +7,9 @@ object AjustesMezcla {
     const val VERSION = 1
     const val PRIMER_ARRANQUE_HECHO = "primerArranqueHecho"
 
+    /** Se pone en `true` cuando ya se avisó (una vez) que el WebView es viejo; no está en `porOmision` para no cambiar el formato guardado. */
+    const val AVISO_DEL_PUENTE_MOSTRADO = "avisoDelPuenteMostrado"
+
     fun porOmision(): JSONObject = JSONObject().apply {
         put("version", VERSION)
         put("perfil", JSONObject.NULL)

@@ -11,6 +11,12 @@
  *    el archivo que lee el actualizador de las apps instaladas.
  *
  * Nunca se firma con la llave de depuración: sin MORPHIQ_FIRMA no se construye.
+ *
+ * VARIANTE DE DEPURACIÓN (sólo para Miguel): `node scripts/construir.mjs don-poncho --depuracion`
+ * (`npm run construir:depuracion`) corre `assembleDebug` y deja `POS-<cliente>-<version>-depuracion.apk`
+ * en `salida/`. No pide MORPHIQ_FIRMA, NO toca el APK bueno ni escribe `android.json` (el canal de
+ * actualización jamás debe apuntar a ella) y su nombre dice «depuracion» para que no se confunda.
+ * Nunca se sube al canal ni se instala al personal.
  */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -23,11 +29,19 @@ const AQUI = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PROYECTO = join(AQUI, 'android');
 const SALIDA = join(AQUI, 'salida');
 const APK_DE_GRADLE = join(PROYECTO, 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
+const APK_DE_DEPURACION = join(PROYECTO, 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
+/** El nombre de la APK de depuración termina SIEMPRE así: es lo que la distingue de la buena en `salida/`. */
+export const SUFIJO_DE_ARCHIVO_DEPURACION = '-depuracion.apk';
 const ES_WINDOWS = process.platform === 'win32';
 
 export function nombreDelArchivo(cliente) {
   const base = cliente.nombre.normalize('NFD').replace(/\p{M}+/gu, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
   return `${base}-${cliente.version}.apk`;
+}
+
+/** `POS-Don-Poncho-1.0.1-depuracion.apk`: el nombre de la APK de depuración. */
+export function nombreDelArchivoDeDepuracion(cliente) {
+  return nombreDelArchivo(cliente).replace(/.apk$/, SUFIJO_DE_ARCHIVO_DEPURACION);
 }
 
 export function fichaDeActualizacion(cliente, archivo, sha256, notas) {
@@ -50,6 +64,24 @@ function entornoDeAndroid() {
   return entorno;
 }
 
+/** Sólo la APK de depuración: no necesita firma, no toca la buena ni `android.json`. */
+function construirDepuracion(id) {
+  const cliente = preparar(id);
+  const entorno = entornoDeAndroid();
+  correr('npx', ['cap', 'sync', 'android'], AQUI, entorno);
+  const gradlew = ES_WINDOWS ? `"${join(PROYECTO, 'gradlew.bat')}"` : join(PROYECTO, 'gradlew');
+  correr(gradlew, ['assembleDebug', '--console=plain'], PROYECTO, entorno);
+  if (!existsSync(APK_DE_DEPURACION)) throw new Error('Gradle terminó pero no dejó el APK de depuración.');
+
+  mkdirSync(SALIDA, { recursive: true });
+  for (const anterior of readdirSync(SALIDA)) {
+    if (anterior.endsWith(SUFIJO_DE_ARCHIVO_DEPURACION)) rmSync(join(SALIDA, anterior), { force: true });
+  }
+  const archivo = nombreDelArchivoDeDepuracion(cliente);
+  copyFileSync(APK_DE_DEPURACION, join(SALIDA, archivo));
+  return { archivo, sha256: createHash('sha256').update(readFileSync(join(SALIDA, archivo))).digest('hex') };
+}
+
 function construir(id) {
   const firma = process.env.MORPHIQ_FIRMA;
   if (!firma) throw new Error('Falta la variable de entorno MORPHIQ_FIRMA con la ruta de firma.properties. Sin ella no se compila el release.');
@@ -65,6 +97,7 @@ function construir(id) {
   // Sólo se renuevan el APK y android.json: las notas de los hitos (HITO-*.txt) y sus copias se conservan.
   mkdirSync(SALIDA, { recursive: true });
   for (const anterior of readdirSync(SALIDA)) {
+    // La de depuración (si hay) también sale: «salida/» queda sólo con lo que se publica.
     if (anterior.endsWith('.apk') || anterior === 'android.json') rmSync(join(SALIDA, anterior), { force: true });
   }
   const archivo = nombreDelArchivo(cliente);
@@ -76,14 +109,16 @@ function construir(id) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const id = process.argv[2];
+  const [id, ...banderas] = process.argv.slice(2);
+  const depuracion = banderas.includes('--depuracion');
   if (!id) {
-    console.error('Uso: node scripts/construir.mjs <cliente>');
+    console.error('Uso: node scripts/construir.mjs <cliente> [--depuracion]');
     process.exit(2);
   }
   try {
-    const { archivo, sha256 } = construir(id);
+    const { archivo, sha256 } = depuracion ? construirDepuracion(id) : construir(id);
     console.log(`\nListo: salida/${archivo}\nsha256: ${sha256}`);
+    if (depuracion) console.log('Es la variante de DEPURACIÓN: no se sube al canal ni se instala al personal.');
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

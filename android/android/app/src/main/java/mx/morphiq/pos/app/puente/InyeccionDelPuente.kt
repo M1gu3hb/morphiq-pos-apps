@@ -11,6 +11,7 @@ import androidx.webkit.WebViewFeature
 import com.getcapacitor.Bridge
 import com.getcapacitor.BridgeWebViewClient
 import com.getcapacitor.JSExport
+import mx.morphiq.pos.app.logica.ModoDelPuente
 import mx.morphiq.pos.app.logica.OrigenPermitido
 
 /**
@@ -19,6 +20,14 @@ import mx.morphiq.pos.app.logica.OrigenPermitido
  *
  * Capacitor ya inyecta su puente nativo en el origen local. Al origen del POS hay que darle ese
  * mismo puente (con el plugin `MorphiqApp` y nada más) más el guion de `MorphiqApp`.
+ *
+ * MARCO PRINCIPAL: nada se instala en iframes (el guion se envuelve en `window.top === window`, y el
+ * guion de `MorphiqApp` lo repite). Capacitor no le pasa el marco al plugin; lo que sí hay es:
+ *  - con `WEB_MESSAGE_LISTENER` Capacitor descarta las llamadas de marcos que no son el principal;
+ *  - sin ella (WebView viejo) `addJavascriptInterface` se ve en todos los marcos y sólo queda la
+ *    revisión de la URL de la página principal en cada llamada (ver `MorphiqAppPlugin`).
+ *
+ * NUNCA bloquea el POS: si algo falla aquí se registra y se sigue con el plan B.
  */
 class InyeccionDelPuente(private val actividad: Activity, private val bridge: Bridge, private val dominio: String) {
 
@@ -26,22 +35,27 @@ class InyeccionDelPuente(private val actividad: Activity, private val bridge: Br
         actividad.assets.open(ARCHIVO_DEL_PUENTE).bufferedReader(Charsets.UTF_8).use { it.readText() }
     }
 
-    /** `true` si se inyectó al inicio del documento; `false` si el WebView no lo permite y hay que usar el plan B. */
-    fun instalar(): Boolean {
-        val web = bridge.webView
+    /** Cómo quedó el puente en este WebView. `planB` en el resultado significa que hay que inyectar con `evaluateJavascript`. */
+    fun instalar(): ModoDelPuente {
+        val marcoVerificado = WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             Log.w(ETIQUETA, "El WebView no soporta guiones al inicio del documento: se inyecta al empezar y al terminar la página.")
-            return false
+            return ModoDelPuente(inicioDelDocumento = false, marcoPrincipalVerificado = marcoVerificado)
         }
         return try {
-            WebViewCompat.addDocumentStartJavaScript(web, guionParaElPos(), setOf("https://${dominio.lowercase()}"))
-            WebViewCompat.addDocumentStartJavaScript(web, guionDelPuente, setOf(bridge.localUrl))
-            true
-        } catch (error: IllegalArgumentException) {
-            Log.e(ETIQUETA, "No se pudo registrar el guion al inicio del documento: ${error.message}")
-            false
+            val web = bridge.webView
+            WebViewCompat.addDocumentStartJavaScript(web, solo(guionParaElPos()), setOf("https://${dominio.lowercase()}"))
+            WebViewCompat.addDocumentStartJavaScript(web, solo(guionDelPuente), setOf(bridge.localUrl))
+            ModoDelPuente(inicioDelDocumento = true, marcoPrincipalVerificado = marcoVerificado)
+        } catch (error: Exception) {
+            // Cualquier fallo (origen inválido, asset ilegible, plugin sin registrar): el POS abre igual, por el plan B.
+            Log.e(ETIQUETA, "No se pudo registrar el guion al inicio del documento: ${error.message}", error)
+            ModoDelPuente(inicioDelDocumento = false, marcoPrincipalVerificado = marcoVerificado, falloAlInstalar = error.javaClass.simpleName)
         }
     }
+
+    /** Un guion que sólo corre en el marco principal y sólo una vez por documento. */
+    private fun solo(guion: String): String = "if (window.top === window && !window.MorphiqApp) {\n$guion\n}"
 
     /** El puente nativo de Capacitor (sólo con el plugin MorphiqApp) y el guion de `MorphiqApp`, para el origen del POS. */
     private fun guionParaElPos(): String {
@@ -55,9 +69,19 @@ class InyeccionDelPuente(private val actividad: Activity, private val bridge: Br
         ).joinToString("\n\n")
     }
 
-    /** Plan B: inyecta con `evaluateJavascript`, y sólo si la URL de la página es de un origen permitido. */
+    /**
+     * Plan B: inyecta con `evaluateJavascript`, y sólo si la URL de la página Y la que tiene el WebView
+     * son de un origen permitido. En el POS va el puente completo (Capacitor no lo puso por su cuenta);
+     * en las pantallas internas basta el guion de `MorphiqApp` (el servidor local de Capacitor ya puso el suyo).
+     */
     fun inyectarSiEsPermitido(web: WebView, url: String?) {
-        if (OrigenPermitido.esPermitido(url, dominio)) web.evaluateJavascript(guionDelPuente, null)
+        if (!OrigenPermitido.esPermitido(url, dominio) || !OrigenPermitido.esPermitido(web.url, dominio)) return
+        try {
+            val guion = if (OrigenPermitido.esLocal(url)) guionDelPuente else guionParaElPos()
+            web.evaluateJavascript(solo(guion), null)
+        } catch (error: Exception) {
+            Log.e(ETIQUETA, "El plan B no pudo inyectar el puente: ${error.message}", error)
+        }
     }
 
     companion object {

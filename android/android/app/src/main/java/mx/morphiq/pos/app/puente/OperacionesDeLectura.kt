@@ -58,7 +58,7 @@ class OperacionesDeLectura(private val servicios: ServiciosDeLaApp, private val 
     fun diagnostico(): JSONObject {
         val avisos = mutableListOf<String>()
         val lista = impresoras(avisos)
-        return servicios.info.diagnostico(servicios.ajustes.leer(), lista, avisos)
+        return servicios.info.diagnostico(servicios.ajustes.leer(), lista, avisos, servicios.modoDelPuente)
     }
 
     /** `DLE EOT` por la conexión que lo permita; se serializa con la cola para no atravesarse con una impresión. */

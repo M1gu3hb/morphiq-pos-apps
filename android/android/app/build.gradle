@@ -43,6 +43,10 @@ android {
             // Íconos, nombre de la app y acceso directo generados por scripts/preparar.mjs.
             res.srcDirs += 'src/generado/res'
         }
+        debug {
+            // Nombre visible («… · depuración») y acceso directo con el paquete de depuración; también los deja preparar.mjs.
+            res.srcDirs += 'src/generado-debug/res'
+        }
     }
 
     signingConfigs {
@@ -64,7 +68,16 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            // La APK que se instala al personal NUNCA es depurable ni expone el WebView a chrome://inspect.
+            debuggable false
             signingConfig signingConfigs.release
+        }
+        debug {
+            // Otra app (otro paquete) para poder convivir con la buena en el aparato de Miguel. Firma: la llave de
+            // depuración local de Android (~/.android/debug.keystore), nunca la del cliente. NO se sube al canal.
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-depuracion'
+            debuggable true
         }
     }
 

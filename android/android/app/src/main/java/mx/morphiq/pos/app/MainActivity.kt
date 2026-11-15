@@ -6,15 +6,17 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.webkit.WebViewFeature
 import com.getcapacitor.BridgeActivity
 import mx.morphiq.pos.app.actualizacion.PantallaDeActualizacion
 import mx.morphiq.pos.app.logica.AjustesMezcla
 import mx.morphiq.pos.app.logica.InfoDeActualizacion
+import mx.morphiq.pos.app.logica.ModoDelPuente
 import mx.morphiq.pos.app.logica.OrigenPermitido
 import mx.morphiq.pos.app.puente.Avisos
 import mx.morphiq.pos.app.puente.ClienteWebMorphiq
@@ -45,11 +47,14 @@ class MainActivity : BridgeActivity(), PantallaDeActualizacion {
             window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES }
         }
         ponerInmersivo()
+        // La depuración del WebView (chrome://inspect) existe SÓLO en la variante de depuración: en la release es `false` siempre.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         instalarPuente()
         configurarAtras()
         fijarPantallaDeInicio(servicios.ajustes.leer().optBoolean(AJUSTE_PANTALLA_DE_INICIO, false))
         servicios.actualizador.pantalla = this
-        servicios.actualizador.iniciarRevisiones()
+        // La variante de depuración vive junto a la buena con otro paquete: no busca ni instala actualizaciones del canal.
+        if (!BuildConfig.DEBUG) servicios.actualizador.iniciarRevisiones()
         if (savedInstanceState == null) irAlInicio(intent)
     }
 
@@ -108,9 +113,19 @@ class MainActivity : BridgeActivity(), PantallaDeActualizacion {
 
     private fun instalarPuente() {
         val inyeccion = InyeccionDelPuente(this, bridge, BuildConfig.CLIENTE_DOMINIO)
-        val inyectado = inyeccion.instalar()
-        val planB = !inyectado || !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
-        bridge.setWebViewClient(ClienteWebMorphiq(bridge, inyeccion, planB))
+        val modo = inyeccion.instalar()
+        servicios.modoDelPuente = modo
+        bridge.setWebViewClient(ClienteWebMorphiq(bridge, inyeccion, modo.planB))
+        avisarUnaVezDelModo(modo)
+    }
+
+    /** Si el WebView es viejo, se dice UNA sola vez en la vida de la instalación (el detalle queda en Diagnóstico). El POS no se detiene. */
+    private fun avisarUnaVezDelModo(modo: ModoDelPuente) {
+        if (!modo.requiereAviso) return
+        val ajustes = servicios.ajustes.leer()
+        if (ajustes.optBoolean(AjustesMezcla.AVISO_DEL_PUENTE_MOSTRADO, false)) return
+        servicios.ajustes.guardar(JSONObject().put(AjustesMezcla.AVISO_DEL_PUENTE_MOSTRADO, true))
+        Toast.makeText(this, modo.avisoUnico(), Toast.LENGTH_LONG).show()
     }
 
     // ---- Navegación ------------------------------------------------------------------------------

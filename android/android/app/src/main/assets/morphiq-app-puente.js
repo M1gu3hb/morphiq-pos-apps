@@ -6,9 +6,14 @@
  * El plugin vuelve a revisar el origen en CADA llamada y rechaza con el código `ORIGEN`.
  *
  * Capacitor se resuelve AL LLAMAR, no al cargar: este guion corre antes que el de Capacitor.
+ *
+ * SÓLO EN EL MARCO PRINCIPAL: dentro de un iframe (aunque sea del mismo origen) `window.top` no es
+ * `window` y el puente no se instala. Es una barrera más: la que decide es el plugin nativo, que
+ * revisa la URL de la página principal en cada llamada.
  */
 (function () {
   'use strict';
+  if (window.top !== window) return;
   if (window.MorphiqApp) return;
 
   var PLUGIN = 'MorphiqApp';

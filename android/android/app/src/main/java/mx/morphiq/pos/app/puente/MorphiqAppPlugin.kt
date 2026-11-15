@@ -12,9 +12,11 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import mx.morphiq.pos.app.BuildConfig
 import mx.morphiq.pos.app.MainActivity
+import mx.morphiq.pos.app.logica.AjustesMezcla
 import mx.morphiq.pos.app.logica.Conexiones
 import mx.morphiq.pos.app.logica.Destino
 import mx.morphiq.pos.app.logica.OrigenPermitido
+import mx.morphiq.pos.app.logica.Topes
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -69,6 +71,8 @@ class MorphiqAppPlugin : Plugin() {
         }
         try {
             accion()
+        } catch (error: ArgumentoRechazado) {
+            call.reject(error.message, "ARGUMENTOS")
         } catch (error: Exception) {
             Log.e(ETIQUETA, "Falló ${call.methodName}: ${error.message}", error)
             call.reject(error.message ?: "La app no pudo hacerlo.", "DESCONOCIDO", error)
@@ -77,7 +81,12 @@ class MorphiqAppPlugin : Plugin() {
 
     private fun responder(call: PluginCall, json: JSONObject) = call.resolve(JSObject.fromJSONObject(json))
 
-    private fun datos(call: PluginCall): JSONObject = JSONObject(call.data.toString())
+    /** Los argumentos de la llamada como JSON, si caben en [Topes.MAX_CARACTERES_LLAMADA]; si no, rechazo `ARGUMENTOS`. */
+    private fun datos(call: PluginCall): JSONObject {
+        val texto = call.data.toString()
+        if (!Topes.llamadaCabe(texto.length)) throw ArgumentoRechazado("La solicitud es demasiado grande y no se acepta")
+        return JSONObject(texto)
+    }
 
     @PluginMethod(returnType = PluginMethod.RETURN_NONE)
     override fun addListener(call: PluginCall) {
@@ -120,6 +129,10 @@ class MorphiqAppPlugin : Plugin() {
     fun guardarAjustes(call: PluginCall) = protegido(call) {
         val antes = servicios.info.modoLigero(servicios.ajustes.leer())
         val parche = datos(call)
+        // Se mide lo que QUEDARÍA guardado (lo de ahora más el parche), no sólo el parche.
+        if (!Topes.ajustesCaben(AjustesMezcla.mezclar(servicios.ajustes.leer(), parche))) {
+            throw ArgumentoRechazado("Los ajustes pesan más de ${Topes.legible(Topes.MAX_BYTES_AJUSTES)} y no se guardan")
+        }
         val guardado = servicios.ajustes.guardar(parche)
         if (parche.has(MainActivity.AJUSTE_PANTALLA_DE_INICIO)) {
             principal.fijarPantallaDeInicio(guardado.optBoolean(MainActivity.AJUSTE_PANTALLA_DE_INICIO, false))

@@ -19,6 +19,7 @@ import mx.morphiq.pos.app.logica.ErrorDeImpresora
 import mx.morphiq.pos.app.logica.EscPos
 import mx.morphiq.pos.app.logica.EstadoEscPos
 import mx.morphiq.pos.app.logica.OpcionesDeEnvio
+import mx.morphiq.pos.app.logica.PlazoDeEnvio
 import mx.morphiq.pos.app.logica.TraductorDeErrores
 import mx.morphiq.pos.app.logica.Transporte
 import mx.morphiq.pos.app.logica.VigilanteDeTiempo
@@ -28,7 +29,7 @@ class TransporteBluetooth(private val contexto: Context, private val direccion: 
 
     override fun enviar(bytes: ByteArray, opciones: OpcionesDeEnvio, alProgreso: (Int) -> Unit) {
         val socket = conectar(opciones.esperaMs)
-        val vigilante = VigilanteDeTiempo(opciones.esperaMs) { socket.close() }.iniciar()
+        val vigilante = VigilanteDeTiempo(opciones.esperaMs, PlazoDeEnvio.totalMs(bytes.size, opciones)) { socket.close() }.iniciar()
         try {
             EnvioPorBloques.escribir(socket.outputStream, bytes, opciones) { enviados ->
                 vigilante.latir()

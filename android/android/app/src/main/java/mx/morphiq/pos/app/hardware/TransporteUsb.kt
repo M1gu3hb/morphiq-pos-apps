@@ -11,8 +11,10 @@ import mx.morphiq.pos.app.logica.ErrorDeImpresora
 import mx.morphiq.pos.app.logica.EscPos
 import mx.morphiq.pos.app.logica.EstadoEscPos
 import mx.morphiq.pos.app.logica.OpcionesDeEnvio
+import mx.morphiq.pos.app.logica.PlazoDeEnvio
 import mx.morphiq.pos.app.logica.TraductorDeErrores
 import mx.morphiq.pos.app.logica.Transporte
+import mx.morphiq.pos.app.logica.VigilanteDeTiempo
 
 /** La interfaz del USB por donde se imprime y sus extremos bulk (salida siempre, entrada si existe). */
 class SeleccionUsb(val interfaz: UsbInterface, val salida: UsbEndpoint, val entrada: UsbEndpoint?)
@@ -24,22 +26,37 @@ class TransporteUsb(
     private val productId: Int,
 ) : Transporte {
 
+    /**
+     * Entrega por bloques con DOS topes: cada `bulkTransfer` espera a lo más [OpcionesDeEnvio.esperaMs]
+     * y el conjunto no pasa de [PlazoDeEnvio.totalMs]. Como algunos controladores ignoran el tiempo de
+     * un `bulkTransfer`, un vigilante cierra la conexión si el envío se atora o se acaba el plazo total:
+     * así un trabajo nunca deja la cola colgada.
+     */
     override fun enviar(bytes: ByteArray, opciones: OpcionesDeEnvio, alProgreso: (Int) -> Unit) {
         val dispositivo = encontrar()
         val seleccion = preparar(dispositivo)
         val conexion = abrir(dispositivo, seleccion)
+        val plazoMs = PlazoDeEnvio.totalMs(bytes.size, opciones)
+        val vigilante = VigilanteDeTiempo(PlazoDeEnvio.inactividadMs(opciones), plazoMs) { conexion.close() }.iniciar()
         try {
             var enviados = 0
             val bloque = opciones.bloqueBytes
             while (enviados < bytes.size) {
+                val espera = minOf(opciones.esperaMs, vigilante.restanteMs())
+                if (vigilante.agotado || espera <= 0) throw TraductorDeErrores.tiempo(plazoMs)
                 val largo = minOf(bloque, bytes.size - enviados)
-                val escritos = conexion.bulkTransfer(seleccion.salida, bytes, enviados, largo, opciones.esperaMs.toInt())
-                if (escritos < 0) throw fallaDeTransferencia(opciones.esperaMs)
+                val escritos = conexion.bulkTransfer(seleccion.salida, bytes, enviados, largo, espera.toInt())
+                if (escritos < 0) throw fallaDeTransferencia(opciones.esperaMs, plazoMs, vigilante)
                 enviados += escritos
+                vigilante.latir()
                 alProgreso(enviados)
-                if (opciones.pausaMs > 0 && enviados < bytes.size) Thread.sleep(opciones.pausaMs)
+                if (opciones.pausaMs > 0 && enviados < bytes.size) {
+                    Thread.sleep(opciones.pausaMs)
+                    vigilante.latir()
+                }
             }
         } finally {
+            vigilante.close()
             soltar(conexion, seleccion)
         }
     }
@@ -90,9 +107,13 @@ class TransporteUsb(
     }
 
     /** `bulkTransfer` da -1 igual si hubo tiempo agotado o si se desconectó: se distingue mirando si el aparato sigue. */
-    private fun fallaDeTransferencia(esperaMs: Long): ErrorDeImpresora {
+    private fun fallaDeTransferencia(esperaMs: Long, plazoMs: Long, vigilante: VigilanteDeTiempo): ErrorDeImpresora {
         val sigue = administrador.deviceList.values.any { it.vendorId == vendorId && it.productId == productId }
-        return if (sigue) TraductorDeErrores.tiempo(esperaMs) else ErrorDeImpresora(Codigo.DESCONECTADA, "Impresora desconectada")
+        return when {
+            !sigue -> ErrorDeImpresora(Codigo.DESCONECTADA, "Impresora desconectada")
+            vigilante.agotado || vigilante.restanteMs() <= 0 -> TraductorDeErrores.tiempo(plazoMs)
+            else -> TraductorDeErrores.tiempo(esperaMs)
+        }
     }
 
     companion object {

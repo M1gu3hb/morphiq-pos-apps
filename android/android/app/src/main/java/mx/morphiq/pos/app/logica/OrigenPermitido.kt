@@ -28,6 +28,13 @@ object OrigenPermitido {
         return host == dominio.lowercase() || host == HOST_LOCAL
     }
 
+    /** `true` si es una pantalla interna de la app (`https://localhost`), no el POS. */
+    fun esLocal(url: String?): Boolean = try {
+        url != null && "https".equals(URI(url.trim()).scheme, ignoreCase = true) && URI(url.trim()).host?.lowercase() == HOST_LOCAL
+    } catch (error: URISyntaxException) {
+        false
+    }
+
     /** `https://<dominio>` y `https://localhost`: los orígenes donde se inyecta el puente. */
     fun origenes(dominio: String): Set<String> = linkedSetOf("https://${dominio.lowercase()}", "https://$HOST_LOCAL")
 }

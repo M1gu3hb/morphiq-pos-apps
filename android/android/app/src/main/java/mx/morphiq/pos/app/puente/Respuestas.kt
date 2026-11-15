@@ -6,6 +6,9 @@ import mx.morphiq.pos.app.logica.ResultadoDeTrabajo
 import mx.morphiq.pos.app.logica.ResultadoFinal
 import org.json.JSONObject
 
+/** Un argumento que la página mandó mal o demasiado grande: se rechaza la llamada con el código `ARGUMENTOS`. */
+class ArgumentoRechazado(mensaje: String) : Exception(mensaje)
+
 /** Los JSON del contrato (`Resultado`) y utilidades para leer argumentos. */
 object Respuestas {
 

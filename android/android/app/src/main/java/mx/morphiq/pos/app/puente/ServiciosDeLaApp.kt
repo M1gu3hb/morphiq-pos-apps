@@ -8,6 +8,7 @@ import mx.morphiq.pos.app.hardware.Dispositivos
 import mx.morphiq.pos.app.hardware.FabricaDeTransportes
 import mx.morphiq.pos.app.hardware.PermisoUsb
 import mx.morphiq.pos.app.logica.ColaDeImpresion
+import mx.morphiq.pos.app.logica.ModoDelPuente
 import mx.morphiq.pos.app.logica.ServicioDeImpresion
 import org.json.JSONObject
 
@@ -21,7 +22,10 @@ class ServiciosDeLaApp(contexto: Context) {
     val permisoUsb = PermisoUsb(contexto)
     val cola = ColaDeImpresion(RegistroDeEntregadosEnPreferencias(contexto))
     val impresion = ServicioDeImpresion(cola, fabrica::crear)
-    val actualizador = ActualizadorAndroid(contexto, BuildConfig.URL_ACTUALIZACION, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)
+    val actualizador = ActualizadorAndroid(contexto, BuildConfig.URL_ACTUALIZACION, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME, habilitado = !BuildConfig.DEBUG)
+
+    /** Cómo quedó armado el puente en este WebView (lo pone MainActivity al arrancar; se muestra en Diagnóstico). */
+    @Volatile var modoDelPuente: ModoDelPuente = ModoDelPuente.COMPLETO
 
     /** Quién manda los eventos (`progreso`, `modo-ligero`…) a la página: lo pone el plugin al cargarse. */
     @Volatile var emitir: (evento: String, datos: JSONObject) -> Unit = { _, _ -> }

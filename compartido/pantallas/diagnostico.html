@@ -21,11 +21,15 @@
 
     <main>
       <p id="cargando" class="vacio" role="status">Leyendo el aparato…</p>
+      <p id="aviso-motor" class="aviso" role="alert" hidden></p>
       <div id="contenido" class="rejilla" hidden></div>
+      <div id="compat" class="rejilla" hidden></div>
 
       <div class="barra">
         <button id="abrir-pos" class="principal" type="button">Abrir el POS</button>
         <button id="actualizar" type="button">Buscar actualización</button>
+        <button id="compatibilidad" type="button">Probar compatibilidad</button>
+        <button id="inicio" type="button" hidden>Usar como pantalla de inicio</button>
         <button id="copiar" type="button">Copiar diagnóstico</button>
         <button id="releer" type="button">Volver a leer</button>
       </div>
@@ -36,6 +40,7 @@
 
     <script src="marca.js"></script>
     <script src="comun.js"></script>
+    <script src="compatibilidad.js"></script>
     <script src="diagnostico.js"></script>
   </body>
 </html>

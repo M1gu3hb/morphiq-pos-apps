@@ -12,6 +12,7 @@ import mx.morphiq.pos.app.logica.Codigo
 import mx.morphiq.pos.app.logica.Destino
 import mx.morphiq.pos.app.logica.EscPos
 import mx.morphiq.pos.app.logica.OpcionesDeEnvio
+import mx.morphiq.pos.app.logica.Topes
 import mx.morphiq.pos.app.logica.TrabajoDeImpresion
 import mx.morphiq.pos.app.logica.opcionesSeguras
 import org.json.JSONObject
@@ -32,7 +33,7 @@ class OperacionesDeImpresion(private val servicios: ServiciosDeLaApp) {
             "html" -> return responder(Respuestas.fallo(id, Codigo.NO_SOPORTADO, "Los documentos HTML sólo se imprimen en Windows"))
             else -> return rechazar("El tipo de documento debe ser «crudo»")
         }
-        val bytes = Respuestas.bytesDeBase64(documento.optString("base64", "")) ?: return rechazar("El base64 del documento no es válido")
+        val bytes = leerBytes(documento.optString("base64", ""), Topes.MAX_BYTES_DOCUMENTO, "documento", rechazar) ?: return
         val opciones = opcionesSeguras(Respuestas.entero(documento, "bloqueBytes"), Respuestas.largo(documento, "pausaMs"), Respuestas.largo(datos, "esperaMs"))
         datos.optJSONObject("recordar")?.let { recordar(it) }
 
@@ -45,9 +46,9 @@ class OperacionesDeImpresion(private val servicios: ServiciosDeLaApp) {
     fun abrirCajon(opciones: JSONObject, responder: (JSONObject) -> Unit, rechazar: (String) -> Unit) {
         val id = idNuevo("cajon")
         val pulso = if (opciones.has("base64")) {
-            Respuestas.bytesDeBase64(opciones.optString("base64", "")) ?: return rechazar("El base64 del pulso no es válido")
+            leerBytes(opciones.optString("base64", ""), Topes.MAX_BYTES_PULSO, "pulso", rechazar) ?: return
         } else {
-            AjustesMezcla.perfilCajonBase64(servicios.ajustes.leer())?.let { Respuestas.bytesDeBase64(it) } ?: EscPos.PULSO_CAJON
+            pulsoDelPerfil() ?: EscPos.PULSO_CAJON
         }
         val destino = destinoDe(opciones.optJSONObject("destino"))
             ?: return responder(Respuestas.fallo(id, Codigo.SIN_PERFIL, "Falta elegir la impresora de este POS"))
@@ -90,10 +91,46 @@ class OperacionesDeImpresion(private val servicios: ServiciosDeLaApp) {
         )
     }
 
+    /** El pulso del perfil guardado; si es ilegible o se pasa del tope se ignora (se usa el pulso estándar) y queda en el registro. */
+    private fun pulsoDelPerfil(): ByteArray? {
+        val base64 = AjustesMezcla.perfilCajonBase64(servicios.ajustes.leer()) ?: return null
+        if (!Topes.base64Cabe(base64.length, Topes.MAX_BYTES_PULSO)) {
+            Log.w(ETIQUETA, "El pulso del cajón guardado pesa más de ${Topes.legible(Topes.MAX_BYTES_PULSO)}: se usa el estándar")
+            return null
+        }
+        return Respuestas.bytesDeBase64(base64)
+    }
+
+    /**
+     * Decodifica [base64] sólo si cabe en [maxBytes] (se mide ANTES de decodificar para no gastar
+     * memoria en algo que se va a rechazar). Si no, rechaza con ARGUMENTOS y devuelve `null`.
+     */
+    private fun leerBytes(base64: String, maxBytes: Int, que: String, rechazar: (String) -> Unit): ByteArray? {
+        if (!Topes.base64Cabe(base64.length, maxBytes)) {
+            rechazar("El $que pesa más de ${Topes.legible(maxBytes)} y no se acepta")
+            return null
+        }
+        val bytes = Respuestas.bytesDeBase64(base64)
+        if (bytes == null) {
+            rechazar("El base64 del $que no es válido")
+            return null
+        }
+        if (bytes.size > maxBytes) {
+            rechazar("El $que pesa más de ${Topes.legible(maxBytes)} y no se acepta")
+            return null
+        }
+        return bytes
+    }
+
     /** Guarda el «último ticket». Si no se puede guardar el trabajo se imprime igual, pero queda en el registro. */
     private fun recordar(recordar: JSONObject) {
         val documento = recordar.optJSONObject("documento")
-        val bytes = documento?.let { Respuestas.bytesDeBase64(it.optString("base64", "")) }
+        val base64 = documento?.optString("base64", "").orEmpty()
+        if (!Topes.base64Cabe(base64.length, Topes.MAX_BYTES_DOCUMENTO)) {
+            Log.w(ETIQUETA, "«recordar» pesa más de ${Topes.legible(Topes.MAX_BYTES_DOCUMENTO)}: no se guarda el último ticket")
+            return
+        }
+        val bytes = Respuestas.bytesDeBase64(base64)
         if (documento == null || bytes == null) {
             Log.w(ETIQUETA, "«recordar» no trae un documento crudo válido: no se guarda el último ticket")
             return

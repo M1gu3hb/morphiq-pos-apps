@@ -53,6 +53,8 @@ class ActualizadorAndroid(
     private val urlDelCanal: String,
     private val versionCodeActual: Int,
     private val versionActual: String,
+    /** `false` en la variante de depuración: es otra app (otro paquete) y no debe instalar el APK del canal. */
+    private val habilitado: Boolean = true,
 ) {
     private val ejecutor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor { r ->
         Thread(r, "actualizador").apply { isDaemon = true }
@@ -70,8 +72,11 @@ class ActualizadorAndroid(
 
     /** Revisa ahora y luego cada 6 horas. Si hay una versión nueva, pregunta en pantalla. */
     fun iniciarRevisiones() {
+        if (!habilitado) return
         ejecutor.scheduleWithFixedDelay({ revisarYPreguntar() }, 0, HORAS_ENTRE_REVISIONES, TimeUnit.HOURS)
     }
+
+    private fun noDisponible() = EstadoDeActualizacion("error", versionActual, mensaje = "La variante de depuración no se actualiza sola")
 
     fun detener() {
         ejecutor.shutdownNow()
@@ -88,11 +93,13 @@ class ActualizadorAndroid(
 
     /** Pregunta al canal si hay una versión mayor. Se puede llamar desde cualquier hilo. */
     fun buscar(alTerminar: (EstadoDeActualizacion) -> Unit) {
+        if (!habilitado) return alTerminar(noDisponible())
         ejecutor.execute { alTerminar(seguro { if (ocupado.get()) estado else consultar() }) }
     }
 
     /** Instala la versión pendiente (la busca si hace falta). */
     fun instalar(alTerminar: (EstadoDeActualizacion) -> Unit) {
+        if (!habilitado) return alTerminar(noDisponible())
         ejecutor.execute { alTerminar(seguro { instalarAhora() }) }
     }
 

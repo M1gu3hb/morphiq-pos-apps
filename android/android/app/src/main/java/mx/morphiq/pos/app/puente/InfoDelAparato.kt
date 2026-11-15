@@ -10,6 +10,7 @@ import mx.morphiq.pos.app.BuildConfig
 import mx.morphiq.pos.app.hardware.Dispositivos
 import mx.morphiq.pos.app.logica.AjustesMezcla
 import mx.morphiq.pos.app.logica.DecisionDeModoLigero
+import mx.morphiq.pos.app.logica.ModoDelPuente
 import mx.morphiq.pos.app.logica.ModoLigero
 import org.json.JSONArray
 import org.json.JSONObject
@@ -31,7 +32,14 @@ class InfoDelAparato(private val contexto: Context, private val dispositivos: Di
         ramTotalMb = memoria().totalMem / BYTES_POR_MB,
         nucleos = Runtime.getRuntime().availableProcessors(),
         aparatoDeRamBaja = ramBaja(),
+        soloAbi32 = soloAbi32,
+        webViewMayor = webViewMayor,
     )
+
+    /** El WebView no cambia mientras vive el proceso: se lee una sola vez (el POS pregunta el modo ligero seguido). */
+    private val webViewMayor: Int? by lazy { ModoLigero.versionMayor(WebViewCompat.getCurrentWebViewPackage(contexto)?.versionName) }
+
+    private val soloAbi32: Boolean by lazy { ModoLigero.soloAbi32(Build.SUPPORTED_ABIS.toList()) }
 
     fun modoLigeroJson(ajustes: JSONObject): JSONObject = modoLigeroAJson(modoLigero(ajustes))
 
@@ -59,11 +67,13 @@ class InfoDelAparato(private val contexto: Context, private val dispositivos: Di
             return JSONObject().put("nombre", "WebView del sistema").put("version", "desconocida")
         }
         val etiqueta = paquete.applicationInfo?.loadLabel(contexto.packageManager)?.toString() ?: paquete.packageName
-        return JSONObject().put("nombre", etiqueta).put("version", paquete.versionName ?: "desconocida")
+        // `paquete` no está en el contrato (sólo nombre y versión): Diagnóstico lo muestra si viene.
+        return JSONObject().put("nombre", etiqueta).put("version", paquete.versionName ?: "desconocida").put("paquete", paquete.packageName)
     }
 
     /** El `Diagnostico` del contrato. */
-    fun diagnostico(ajustes: JSONObject, impresoras: JSONArray, avisos: MutableList<String>): JSONObject {
+    fun diagnostico(ajustes: JSONObject, impresoras: JSONArray, avisos: MutableList<String>, puente: ModoDelPuente): JSONObject {
+        avisos.addAll(puente.avisos())
         val memoria = memoria()
         val pantalla = contexto.resources.displayMetrics
         val es64 = Process.is64Bit()
@@ -107,6 +117,8 @@ class InfoDelAparato(private val contexto: Context, private val dispositivos: Di
             )
             put("serviciosDeMarca", JSONArray(dispositivos.serviciosDeMarca()))
             put("modoLigero", modoLigeroJson(ajustes))
+            // Extra fuera del contrato: cómo quedó armado el puente en este WebView.
+            put("puente", puente.aJson())
             put("avisos", JSONArray(avisos))
         }
         return resultado

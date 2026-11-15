@@ -6,8 +6,13 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.SocketTimeoutException
 
-/** Socket TCP a host:9100 (puerto crudo de las impresoras térmicas de red). */
-class TransporteRed(private val host: String, private val puerto: Int) : Transporte {
+/**
+ * Socket TCP a ip:9100 (puerto crudo de las impresoras térmicas de red). Sólo direcciones de la red
+ * local (DP-D125, ver [DireccionPrivada]): con cualquier otra el constructor lanza `NO_SOPORTADO`
+ * ANTES de abrir un socket; jamás se resuelve un nombre.
+ */
+class TransporteRed(host: String, private val puerto: Int) : Transporte {
+    private val host: String = DireccionPrivada.exigir(host)
 
     override fun enviar(bytes: ByteArray, opciones: OpcionesDeEnvio, alProgreso: (Int) -> Unit) {
         val socket = try {
@@ -15,7 +20,7 @@ class TransporteRed(private val host: String, private val puerto: Int) : Transpo
         } catch (error: IOException) {
             throw TraductorDeErrores.traducir(error, opciones.esperaMs)
         }
-        val vigilante = VigilanteDeTiempo(opciones.esperaMs) { socket.close() }.iniciar()
+        val vigilante = VigilanteDeTiempo(opciones.esperaMs, PlazoDeEnvio.totalMs(bytes.size, opciones)) { socket.close() }.iniciar()
         try {
             socket.use {
                 EnvioPorBloques.escribir(it.getOutputStream(), bytes, opciones) { enviados ->

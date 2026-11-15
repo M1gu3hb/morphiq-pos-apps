@@ -20,6 +20,21 @@ repo; sin `MORPHIQ_FIRMA` el build `release` se detiene con un mensaje y nunca f
 depuración. `salida/` queda con `POS-<cliente>-<version>.apk` y `android.json` (con el sha256 real),
 que se sube al canal de GitHub Releases del cliente.
 
+## Variante de depuración (sólo para Miguel y para quien depura)
+
+`npm run construir:depuracion` (o `node scripts/construir.mjs don-poncho --depuracion`) corre `assembleDebug` y deja
+`salida/POS-<cliente>-<version>-depuracion.apk`. Es OTRA app: paquete `<appId>.debug`, nombre «POS Don Poncho ·
+depuración», firmada con la llave de depuración local de Android (no pide `MORPHIQ_FIRMA`), con el WebView
+depurable (`chrome://inspect` por USB) y sin buscar actualizaciones. La `release` nunca es depurable
+(`debuggable false` y `setWebContentsDebuggingEnabled(BuildConfig.DEBUG)`; lo vigila `pruebas/construccion.test.mjs`).
+
+**NUNCA se sube al canal de actualización ni se instala al personal.** El guion no escribe `android.json` para ella.
+
+## Pruebas
+
+`npm run probar` (JUnit de la lógica) y `npm run probar:puente` (el guion del puente, las sondas de
+compatibilidad y el guion de construcción).
+
 ## Cómo está armado
 
 - Todo lo del cliente sale de `generado/cliente.json` (lo deja `scripts/preparar-cliente.mjs` de la

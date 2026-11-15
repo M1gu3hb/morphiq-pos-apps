@@ -80,4 +80,14 @@ class OrigenPermitidoTest {
     @Test fun `los origenes de inyeccion son el dominio y localhost`() {
         assertEquals(setOf("https://pos-don-poncho.vercel.app", "https://localhost"), OrigenPermitido.origenes("Pos-Don-Poncho.vercel.app"))
     }
+
+    @Test fun `una pantalla interna se distingue del POS`() {
+        assertTrue(OrigenPermitido.esLocal("https://localhost/diagnostico.html"))
+        assertTrue(OrigenPermitido.esLocal("HTTPS://LOCALHOST"))
+        assertFalse(OrigenPermitido.esLocal("https://pos-don-poncho.vercel.app/"))
+        assertFalse(OrigenPermitido.esLocal("http://localhost"))
+        assertFalse(OrigenPermitido.esLocal("https://localhost.evil.com"))
+        assertFalse(OrigenPermitido.esLocal(null))
+        assertFalse(OrigenPermitido.esLocal("no es url"))
+    }
 }

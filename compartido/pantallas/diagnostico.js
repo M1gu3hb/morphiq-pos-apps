@@ -5,18 +5,73 @@
   var contenido = document.getElementById('contenido');
   var cargando = document.getElementById('cargando');
   var estado = document.getElementById('estado');
+  var aviso = document.getElementById('aviso-motor');
+  var compat = document.getElementById('compat');
+  var Compat = window.Compatibilidad || null;
   var ultimo = null;
+  var ultimaCompat = null;
 
   function decir(texto, clase) {
     estado.textContent = texto;
     estado.className = 'estado' + (clase ? ' ' + clase : '');
   }
 
-  function tarjeta(titulo, ancha) {
+  function tarjeta(titulo, ancha, destino) {
     var caja = window.nodo('section', null, 'tarjeta' + (ancha ? ' ancha' : ''));
     caja.appendChild(window.nodo('h2', titulo));
-    contenido.appendChild(caja);
+    (destino || contenido).appendChild(caja);
     return caja;
+  }
+
+  /** El motor: user agent completo, el `Chrome/N` que dice, y lo que el puente sepa del WebView (en Electron no hay paquete ni puente). */
+  function tarjetaDelMotor(d) {
+    var motor = tarjeta('Motor de pantalla', true);
+    var ua = window.navigator.userAgent;
+    var version = Compat ? Compat.motorDelUserAgent(ua) : null;
+    dato(motor, 'Versión del motor', version ? version.completa : 'no se pudo leer');
+    if (d.navegador) {
+      dato(motor, d.navegador.nombre, d.navegador.version);
+      if (d.navegador.paquete) dato(motor, 'Paquete del WebView', d.navegador.paquete);
+    }
+    if (d.puente) {
+      dato(motor, 'Puente con la app', d.puente.inyeccion === 'inicio-del-documento' ? 'Normal' : 'Modo compatible');
+      dato(motor, 'Llamadas por marco', d.puente.marcoPrincipalVerificado ? 'Sólo la página principal' : 'Sólo se revisa la página principal');
+    }
+    motor.appendChild(window.nodo('p', 'User agent', 'vacio'));
+    motor.appendChild(window.nodo('p', ua, 'agente'));
+  }
+
+  /** El aviso del nivel del motor: se ve sin tocar nada. */
+  function avisarDelMotor(resultado) {
+    var texto = Compat ? Compat.avisoDeNivel(resultado.nivel) : null;
+    aviso.hidden = !texto;
+    aviso.textContent = texto || '';
+    aviso.className = resultado.nivel === 'demasiado-viejo' ? 'aviso mal' : 'aviso';
+  }
+
+  /** La lista de sondas: cada una «pasa» o «falla». */
+  function pintarCompatibilidad(resultado) {
+    compat.textContent = '';
+    var caja = tarjeta('Compatibilidad del motor', true, compat);
+    caja.appendChild(window.nodo('p', resultado.aprobadas + ' de ' + resultado.total + ' pasan · nivel: ' + resultado.nivel, 'grande'));
+    resultado.sondas.forEach(function (sonda) {
+      var renglon = window.nodo('div', null, 'dato');
+      renglon.appendChild(window.nodo('span', sonda.grupo + ' · ' + sonda.id));
+      renglon.appendChild(window.nodo('span', sonda.ok ? 'pasa' : 'falla', sonda.ok ? 'bien' : 'mal'));
+      caja.appendChild(renglon);
+    });
+    compat.hidden = false;
+  }
+
+  function probarCompatibilidad() {
+    if (!Compat) {
+      decir('Esta pantalla no trae las pruebas de compatibilidad.', 'mal');
+      return;
+    }
+    ultimaCompat = Compat.probar();
+    avisarDelMotor(ultimaCompat);
+    pintarCompatibilidad(ultimaCompat);
+    decir('Compatibilidad probada ✓', 'bien');
   }
 
   function dato(caja, nombre, valor) {
@@ -114,8 +169,9 @@
     pantalla.appendChild(window.nodo('p', d.pantalla.anchoPx + ' × ' + d.pantalla.altoPx, 'grande'));
     dato(pantalla, 'Escala', String(d.pantalla.escala));
     dato(pantalla, 'Táctil', d.pantalla.tactil ? 'Sí' : 'No');
-    dato(pantalla, d.navegador.nombre, d.navegador.version);
     dato(pantalla, 'Modo ligero', (d.modoLigero.activo ? 'Encendido' : 'Apagado') + ' · ' + d.modoLigero.motivo);
+
+    tarjetaDelMotor(d);
 
     var impresoras = tarjeta('Impresoras', true);
     if (d.impresoras.length === 0) {
@@ -165,6 +221,8 @@
     return;
   }
 
+  if (Compat) avisarDelMotor(Compat.probar());
+
   leer().catch(function (error) {
     cargando.textContent = 'No se pudo leer el aparato: ' + (error && error.message ? error.message : 'error desconocido');
     cargando.className = 'aviso';
@@ -187,9 +245,43 @@
       else decir('Hay una versión nueva: ' + (a.versionNueva || '') + '.', 'bien');
     });
   });
+  document.getElementById('compatibilidad').addEventListener('click', probarCompatibilidad);
+
+  // «Pantalla de inicio» (sólo Android): el personal no puede salirse del POS con el botón de inicio.
+  // Se guarda como ajuste del aparato (`pantallaDeInicio`) y la app lo aplica al momento.
+  var botonDeInicio = document.getElementById('inicio');
+  var enInicio = false;
+  function pintarInicio() {
+    botonDeInicio.textContent = enInicio ? 'Dejar de usar como pantalla de inicio' : 'Usar como pantalla de inicio';
+  }
+  if (botonDeInicio) {
+    app.diagnostico().then(function (d) {
+      if (d.plataforma !== 'android') return null;
+      return app.ajustes().then(function (ajustes) {
+        enInicio = !!ajustes && ajustes.pantallaDeInicio === true;
+        pintarInicio();
+        botonDeInicio.hidden = false;
+      });
+    }).catch(function () {
+      // Sin diagnóstico o sin ajustes no se ofrece el botón: el resto de la pantalla ya dice qué falló.
+      botonDeInicio.hidden = true;
+    });
+    botonDeInicio.addEventListener('click', function () {
+      app.guardarAjustes({ pantallaDeInicio: !enInicio }).then(function (ajustes) {
+        enInicio = !!ajustes && ajustes.pantallaDeInicio === true;
+        pintarInicio();
+        decir(enInicio
+          ? 'Listo. Toca el botón de inicio del aparato: Android pregunta qué usar; elige esta app y «Siempre».'
+          : 'Listo. El aparato vuelve a su pantalla de inicio de siempre.', 'bien');
+      }, function (error) {
+        decir('No se pudo cambiar: ' + (error && error.message ? error.message : 'error desconocido'), 'mal');
+      });
+    });
+  }
   document.getElementById('copiar').addEventListener('click', function () {
     if (!ultimo) return;
-    var texto = JSON.stringify(ultimo, null, 2);
+    var motor = { userAgent: window.navigator.userAgent, version: Compat ? Compat.motorDelUserAgent(window.navigator.userAgent) : null };
+    var texto = JSON.stringify(Object.assign({}, ultimo, { motorWeb: motor, compatibilidad: ultimaCompat || (Compat ? Compat.probar() : null) }), null, 2);
     var area = document.createElement('textarea');
     area.value = texto;
     area.setAttribute('readonly', '');

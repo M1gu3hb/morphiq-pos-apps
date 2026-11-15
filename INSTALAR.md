@@ -57,6 +57,39 @@ Necesita Android 6 o más nuevo.
 2. En la app, la primera vez pide el permiso de **«dispositivos cercanos»**: acéptalo.
 3. Vuelve a Diagnóstico y toca «Volver a leer»: la impresora aparece en la lista.
 
+### Los POS con Android viejo (iMin D4-503 y parecidos)
+
+Estos aparatos traen Android 7 y un «motor de pantalla» (WebView) que **no se puede actualizar**:
+instalar «Android System WebView» o Chrome no lo cambia. No hace falta: el POS trae un **modo
+compatible** y se ve igual que en un aparato nuevo. La app lo avisa una sola vez («Este aparato usa
+un motor antiguo…») y en Diagnóstico → **«Probar compatibilidad»** sale la lista de lo que el motor
+entiende. Si dijera **«Este aparato es demasiado viejo para el POS»**, ese aparato no sirve.
+
+Antes de dejarlo en el mostrador, en los Ajustes de Android del aparato:
+
+1. **Fecha y hora automáticas** (Ajustes → Fecha y hora → «Fecha y hora automáticas» y «Zona
+   horaria automática»). Es lo más importante: con la fecha desfasada el aparato rechaza la
+   conexión segura y el POS no abre («Sin conexión»), aunque haya internet.
+2. **Que la pantalla no se suspenda** (Ajustes → Pantalla → Suspender: «Nunca» o el máximo). El
+   POS mantiene la pantalla encendida mientras está abierto, pero el ajuste evita que se apague en
+   el Diagnóstico o al cambiar de app.
+3. **Las actualizaciones del sistema de iMin, fuera del horario de servicio**: si el aparato ofrece
+   una actualización, pospónla y hazla con el restaurante cerrado. A media operación reinicia el
+   aparato.
+4. **Opcional — la app como pantalla de inicio** (desde la 1.0.1): en la app, Diagnóstico → **«Usar
+   como pantalla de inicio»**. Después toca el botón de inicio del aparato: Android pregunta qué
+   usar; elige «POS Don Poncho» y «Siempre». El personal ya no puede salirse del POS con ese botón.
+   Para volver al escritorio de Android: Diagnóstico (mantén presionado el ícono, o el aviso del
+   primer arranque) → «Dejar de usar como pantalla de inicio».
+
+**Actualizar la app (de la 1.0.0 en adelante):** al abrir la app con una versión nueva publicada
+aparece el aviso; toca **«Instalar»**. La primera vez Android 7 pide encender «Orígenes
+desconocidos» (Ajustes → Seguridad). **El perfil de impresión que ya guardaste se conserva**: no
+hay que volver a configurar la impresora ni el cajón.
+
+Los **teléfonos viejos del personal** (meseros, cocina) abren el POS en su navegador y reciben el
+mismo modo compatible; no hay que instalarles nada.
+
 ## 3 · Dejar lista la impresión (el laboratorio)
 
 En el POS, entra como dueño o administrador:

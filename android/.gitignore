@@ -1,6 +1,7 @@
 # Lo que genera `npm run preparar` / `npx cap sync` y no se versiona.
 capacitor.config.json
 android/app/src/generado/
+android/app/src/generado-debug/
 android/app/src/main/assets/capacitor.config.json
 android/app/src/main/assets/capacitor.plugins.json
 android/app/capacitor.build.gradle

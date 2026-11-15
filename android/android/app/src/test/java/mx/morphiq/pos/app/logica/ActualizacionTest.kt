@@ -85,6 +85,20 @@ class ActualizacionTest {
         assertFalse(Actualizacion.urlDeDescargaPermitida("no es url"))
     }
 
+    // ---- 1.0.1 sobre 1.0.0 ----
+
+    @Test fun `la version 1 0 1 (codigo 3) es mas nueva que la 1 0 0 (codigo 2) y se anuncia con ese codigo`() {
+        assertTrue(Actualizacion.hayNueva(codigoNuevo = 3, codigoActual = 2))
+        assertFalse("la misma version no se reinstala", Actualizacion.hayNueva(3, 3))
+        assertFalse("nunca se baja de version", Actualizacion.hayNueva(2, 3))
+        val sha = "a".repeat(64)
+        val (info, motivo) = Actualizacion.leer("""{"versionCode":3,"version":"1.0.1","apk":"POS-Don-Poncho-1.0.1.apk","sha256":"$sha","notas":"Versión 1.0.1"}""")
+        assertNull(motivo)
+        assertEquals(3, info!!.versionCode)
+        assertEquals("1.0.1", info.version)
+        assertTrue(Actualizacion.hayNueva(info.versionCode, codigoActual = 2))
+    }
+
     // ---- sha256 ----
 
     private fun sha256De(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }

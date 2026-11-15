@@ -15,7 +15,7 @@ const GUION = readFileSync(join(AQUI, '..', 'android', 'app', 'src', 'main', 'as
 const CONTRATO = readFileSync(join(AQUI, '..', '..', 'puente', 'contrato.d.ts'), 'utf8');
 
 /** Un Capacitor de mentiras: anota las llamadas y responde con lo que diga `respuestas[metodo]`. */
-function entorno(respuestas = {}) {
+function entorno(respuestas = {}, { marco = 'principal' } = {}) {
   const llamadas = [];
   const oyentes = [];
   const window = {
@@ -39,6 +39,8 @@ function entorno(respuestas = {}) {
     },
   };
   window.window = window;
+  // En el marco principal `window.top` es el propio window; en un iframe es la página que lo contiene.
+  window.top = marco === 'principal' ? window : { otraPagina: true };
   vm.runInNewContext(GUION, window);
   return { window, llamadas, oyentes };
 }
@@ -156,6 +158,7 @@ test('si Capacitor no existe todavía (página sin puente nativo) se rechaza con
 test('Capacitor se resuelve AL LLAMAR: el puente puede cargarse antes que Capacitor', async () => {
   const contexto = {};
   contexto.window = contexto;
+  contexto.top = contexto;
   vm.runInNewContext(GUION, contexto);
   const llamadas = [];
   contexto.Capacitor = { nativePromise: (p, m) => (llamadas.push([p, m]), Promise.resolve({ valor: 'x' })) };
@@ -180,4 +183,14 @@ test('escuchar se suscribe al evento y devuelve la función que lo quita', () =>
 test('escuchar exige una función', () => {
   const { window } = entorno();
   assert.throws(() => window.MorphiqApp.escuchar('progreso', null), (error) => error.name === 'TypeError');
+});
+
+test('dentro de un iframe el puente NO se instala (ni en el mismo origen)', () => {
+  const { window } = entorno({}, { marco: 'iframe' });
+  assert.equal(window.MorphiqApp, undefined);
+});
+
+test('en el marco principal sí se instala', () => {
+  const { window } = entorno({}, { marco: 'principal' });
+  assert.equal(typeof window.MorphiqApp.imprimir, 'function');
 });
