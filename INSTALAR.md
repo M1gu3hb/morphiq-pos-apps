@@ -149,6 +149,9 @@ Marca cada una en cada aparato:
 | El ticket sale cortado a la derecha | «Puntos» es más grande que lo que imprime esa impresora: vuelve a la regla de calibración. |
 | El cajón no abre | Pin 2 ↔ 5 en el laboratorio; revisa que el cable del cajón vaya a la impresora. |
 | En Windows dice «fuera de línea» y no imprime aunque sí está conectada | Algunos drivers lo dicen mal. Avísame: se apaga esa revisión para ese aparato. |
+| «La impresora de red se indica con su dirección IP completa…» o «Sólo se imprime en red hacia direcciones de tu red local» (desde la 1.0.1) | En el laboratorio, escribe la **IP** de la impresora (por ejemplo `192.168.1.50`), no su nombre. Una impresora de red siempre está en la red del negocio. |
+| En Windows: «La impresora «…» no está instalada en este equipo» (desde la 1.0.1) | Instálala en Windows (Configuración → Impresoras) o elige otra de la lista del laboratorio. La app sólo imprime en las que Windows tiene instaladas. |
+| En el POS con Android el POS no abre y dice «Sin conexión», pero sí hay internet | Revisa la **fecha y la hora** del aparato (deben estar en automático). Con la fecha mal, el aparato rechaza la conexión segura. |
 | La app no abre el POS | «Sin internet, reintentando…» vuelve sola. Si no, `Ctrl`+`Shift`+`M` → Recargar. |
 | No imprime nada directo | Siempre queda el navegador: el botón «Imprimir con el navegador» abre el diálogo de siempre. |
 | Reimprimir sin internet | En la pantalla «Sin internet»: «Reimprimir el último ticket» (sale marcado como reimpresión). |
