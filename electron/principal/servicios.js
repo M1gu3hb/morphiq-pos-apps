@@ -45,12 +45,13 @@ function validarOpciones(opciones, { conBase64 = false } = {}) {
  *   ayudante: { ejecutar: Function },
  *   actualizador: { buscar: () => Promise<object>, instalar: () => object },
  *   ventana: { cargarPos: () => Promise<void>, cargarPantalla: (n: string) => Promise<void> },
+ *   archivos: { guardar: (datos: unknown) => Promise<object>, abrirCarpeta: () => Promise<object> },
  *   aplicarAjustes: (parche: object, nuevos: object) => void,
  *   registrar: (mensaje: string) => void,
  * }} deps
  */
 function crearMetodos(deps) {
-  const { cliente, ajustes, servicio, ultimoTicket, diagnostico, ayudante, actualizador, ventana, aplicarAjustes, registrar } = deps;
+  const { cliente, ajustes, servicio, ultimoTicket, diagnostico, ayudante, actualizador, ventana, archivos, aplicarAjustes, registrar } = deps;
 
   const modoLigero = () =>
     decidirModoLigero({
@@ -97,6 +98,10 @@ function crearMetodos(deps) {
       irA(() => ventana.cargarPos());
     },
     abrirDiagnostico: () => irA(() => ventana.cargarPantalla('diagnostico')),
+
+    // Los PDF de los cortes (1.0.2). `abrirCarpeta` NO pasa argumentos: no hay forma de pedir otra ruta.
+    'archivos.guardar': (datos) => archivos.guardar(datos),
+    'archivos.abrirCarpeta': () => archivos.abrirCarpeta(),
   };
   return { metodos, modoLigero };
 }

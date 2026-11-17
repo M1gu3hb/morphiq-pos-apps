@@ -12,7 +12,17 @@
  *     Sin internet, Acerca de). Cada llamada vuelve a comprobar el origen de quien llama; si no es
  *     uno permitido, se rechaza con `ORIGEN`.
  *  2. El puente NO da acceso a archivos ni a comandos del sistema: sólo imprimir, cajón,
- *     diagnóstico, ajustes del aparato y actualización.
+ *     diagnóstico, ajustes del aparato y actualización. LA ÚNICA EXCEPCIÓN (Windows 1.0.2) es
+ *     `archivos`: guardar el PDF de un corte y abrir la carpeta donde se guardan, con TRES cerrojos:
+ *       a) SÓLO PDF: el contenido debe empezar con la firma `%PDF-` y no pasar de 20 MiB.
+ *       b) SÓLO esa carpeta: `Documentos\POS Don Poncho\Cortes\AAAA-MM\`. La página NO da nombre ni
+ *          ruta: da el folio y la fecha del corte, la app los valida con expresiones estrictas y arma
+ *          ella `Corte-<folio>-<AAAA-MM-DD>.pdf`; y comprueba que el destino quede dentro de la carpeta.
+ *          `abrirCarpeta()` no recibe ruta: abre esa carpeta y ninguna otra.
+ *       c) SÓLO el origen de producción: a diferencia del resto del puente, ni siquiera las pantallas
+ *          internas de la app pueden llamarlas (rechazo `ORIGEN`).
+ *     No hay lectura, listado, borrado ni otra ruta de escritura. La Android 1.0.1 y la Windows
+ *     1.0.1 no traen `archivos`: la página lo sabe por `capacidades` (ver `MorphiqApp.capacidades`).
  *  3. Las apps son TRANSPORTE: la página arma los bytes (ESC/POS como imagen o como texto, el
  *     corte, el pulso del cajón) y la app los entrega a la impresora. Lo único que las apps
  *     saben armar solas es la página de prueba mínima y el pulso del cajón (para probar antes de
@@ -245,6 +255,52 @@ export interface CapacidadDeConexion {
   readonly motivo?: string;
 }
 
+/** Lo que la app sabe hacer además del contrato base. `archivos`: Windows 1.0.2 en adelante. */
+export type Capacidad = 'archivos';
+
+/** Lo que la página manda para guardar el PDF de un corte. Nada más se acepta (ni ruta, ni nombre). */
+export interface CorteParaGuardar {
+  /** El folio como lo lee la persona («DPC-0102», «CC-2»): letras y números, hasta 3 tramos con guion, 24 caracteres. */
+  readonly folio: string;
+  /** `AAAA-MM-DD`, una fecha real del calendario; de ella sale la carpeta del mes. */
+  readonly fecha: string;
+  /** El PDF en base64 (empieza con `%PDF-`, hasta 20 MiB ya decodificado). */
+  readonly base64: string;
+}
+
+export type CodigoDeArchivo =
+  /** Folio, fecha o base64 inválidos, o la página mandó llaves de más (ruta, nombre…). */
+  | 'ARGUMENTOS'
+  | 'NO_ES_PDF'
+  | 'MUY_GRANDE'
+  /** El destino quedaba fuera de la carpeta de cortes (no debería pasar; se rechaza). */
+  | 'FUERA_DE_CARPETA'
+  /** El disco o el Explorador fallaron (archivo abierto en otro programa, sin permiso…). */
+  | 'NO_SE_PUDO';
+
+export type ResultadoDeGuardado =
+  | {
+      readonly ok: true;
+      /** `guardado`: archivo nuevo · `ya-estaba`: el mismo corte con el mismo contenido (no se reescribe) · `reemplazado`: el mismo corte, otro PDF. */
+      readonly estado: 'guardado' | 'ya-estaba' | 'reemplazado';
+      /** La ruta completa donde quedó, para mostrarla. */
+      readonly ruta: string;
+      readonly bytes: number;
+    }
+  | { readonly ok: false; readonly codigo: CodigoDeArchivo; readonly mensaje: string };
+
+export type ResultadoDeCarpeta =
+  | { readonly ok: true; readonly ruta: string }
+  | { readonly ok: false; readonly codigo: 'NO_SE_PUDO'; readonly mensaje: string };
+
+/** Windows 1.0.2. Ninguna función lanza por un fallo: el motivo viene en el resultado. */
+export interface ArchivosDeCortes {
+  /** Guarda el PDF en `Documentos\POS Don Poncho\Cortes\AAAA-MM\Corte-<folio>-<fecha>.pdf`. Guardar el mismo corte otra vez no duplica. */
+  guardar(corte: CorteParaGuardar): Promise<ResultadoDeGuardado>;
+  /** Abre en el Explorador `Documentos\POS Don Poncho\Cortes` (la crea si falta). SIN parámetros: no acepta ruta. */
+  abrirCarpeta(): Promise<ResultadoDeCarpeta>;
+}
+
 export type Evento =
   /** `{ id, enviados, total }` mientras sale un trabajo. */
   | 'progreso'
@@ -256,6 +312,13 @@ export type Evento =
 export interface MorphiqApp {
   /** Versión del contrato. Hoy 1. */
   readonly contrato: 1;
+  /**
+   * Lo que esta app sabe hacer además del contrato base. SÓLO existe desde la Windows 1.0.2: si falta
+   * (1.0.1, Android), la página no ofrece lo que dependa de ello. Hoy: `['archivos']` en Windows 1.0.2.
+   */
+  readonly capacidades?: readonly Capacidad[];
+  /** Presente sólo si `capacidades` incluye `'archivos'`. Ver la regla 2 de arriba. */
+  readonly archivos?: ArchivosDeCortes;
 
   version(): Promise<string>;
   plataforma(): Promise<Plataforma>;

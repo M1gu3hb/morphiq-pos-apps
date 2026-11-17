@@ -6,7 +6,8 @@
 const path = require('node:path');
 const { crearGestorDeVentana, PARTICION_DEL_POS } = require('./ventana');
 const { aplicarPoliticaDeNavegacion, aplicarPermisos, aislarSesionDeImpresion } = require('./navegacion');
-const { origenPermitido } = require('./origen');
+const { origenPermitido, esOrigenDelCliente } = require('./origen');
+const { crearArchivos } = require('./archivos');
 const { registrarPuente } = require('./puente');
 const { crearMetodos } = require('./servicios');
 const { crearDiagnostico } = require('./diagnostico');
@@ -127,6 +128,9 @@ function crearAplicacion({ electron, cliente, rutas, almacen, registrar, opcione
     }
   }
 
+  // --- los PDF de los cortes (1.0.2) ----------------------------------------------------------
+  const archivos = crearArchivos({ carpetaDocumentos: app.getPath('documents'), shell, registrar });
+
   const { metodos, modoLigero } = crearMetodos({
     cliente,
     ajustes: almacen,
@@ -136,15 +140,20 @@ function crearAplicacion({ electron, cliente, rutas, almacen, registrar, opcione
     ayudante,
     actualizador,
     ventana,
+    archivos,
     aplicarAjustes,
     registrar,
   });
   leerModoLigero = modoLigero;
   modoLigeroAnterior = modoLigero();
 
+  // Guardar archivos es la única excepción del puente: sólo desde la página de producción, NO desde
+  // las pantallas internas (que sí pasan la revisión general).
+  const soloProduccion = (url) => esOrigenDelCliente(url, cliente.dominio);
   const quitarPuente = registrarPuente({
     ipcMain,
     permitido: (url) => origenPermitido(url, contexto),
+    reglas: { 'archivos.guardar': soloProduccion, 'archivos.abrirCarpeta': soloProduccion },
     metodos,
     registrar,
   });

@@ -113,11 +113,31 @@ test('contrato: el preload, el principal y contrato.d.ts exponen exactamente los
     ayudante: { ejecutar: async () => ({}) },
     actualizador: {},
     ventana: {},
+    archivos: {},
     aplicarAjustes: () => {},
     registrar: () => {},
   });
-  assert.deepEqual(Object.keys(metodos).sort(), [...delContrato].sort(), 'principal vs contrato.d.ts');
+  const deArchivos = Object.keys(metodos)
+    .filter((n) => n.startsWith('archivos.'))
+    .map((n) => n.slice('archivos.'.length))
+    .sort();
+  assert.deepEqual(Object.keys(metodos).filter((n) => !n.startsWith('archivos.')).sort(), [...delContrato].sort(), 'principal vs contrato.d.ts');
+  assert.deepEqual(deArchivos, ['abrirCarpeta', 'guardar'], 'el principal sólo atiende esos dos de archivos');
+  const interfazDeArchivos = /export interface ArchivosDeCortes \{([\s\S]*?)\n\}/.exec(dts)[1];
+  const archivosDelContrato = [...interfazDeArchivos.matchAll(/^\s{2}([a-zA-Z]+)\(/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(archivosDelContrato, deArchivos, 'archivos: principal vs contrato.d.ts');
   assert.match(dts, /readonly contrato: 1;/);
+});
+
+test('contrato: la cabecera ya no dice «sin archivos» a secas: nombra la excepción y sus tres cerrojos', () => {
+  const dts = fs.readFileSync(path.join(__dirname, '..', '..', 'puente', 'contrato.d.ts'), 'utf8');
+  const cabecera = /\/\*\*([\s\S]*?)\*\//.exec(dts)[1];
+  assert.match(cabecera, /ÚNICA EXCEPCIÓN/);
+  assert.match(cabecera, /SÓLO PDF/);
+  assert.match(cabecera, /SÓLO esa carpeta[\s\S]*Documentos\\POS Don Poncho\\Cortes\\AAAA-MM/);
+  assert.match(cabecera, /SÓLO el origen de producción/);
+  assert.match(dts, /readonly capacidades\?: readonly Capacidad\[\];/);
+  assert.match(dts, /export type Capacidad = 'archivos';/);
 });
 
 test('conexiones: usb y bluetooth no disponibles en Windows, con su motivo', () => {

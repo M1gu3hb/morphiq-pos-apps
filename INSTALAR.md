@@ -152,6 +152,7 @@ Marca cada una en cada aparato:
 | «La impresora de red se indica con su dirección IP completa…» o «Sólo se imprime en red hacia direcciones de tu red local» (desde la 1.0.1) | En el laboratorio, escribe la **IP** de la impresora (por ejemplo `192.168.1.50`), no su nombre. Una impresora de red siempre está en la red del negocio. |
 | En Windows: «La impresora «…» no está instalada en este equipo» (desde la 1.0.1) | Instálala en Windows (Configuración → Impresoras) o elige otra de la lista del laboratorio. La app sólo imprime en las que Windows tiene instaladas. |
 | En el POS con Android el POS no abre y dice «Sin conexión», pero sí hay internet | Revisa la **fecha y la hora** del aparato (deben estar en automático). Con la fecha mal, el aparato rechaza la conexión segura. |
+| En Windows el PDF del corte no aparece en `Documentos\POS Don Poncho\Cortes\AAAA-MM\` (desde la 1.0.2) | Los cortes se guardan solos ahí al cerrar la caja. Si el POS avisó que no se pudo (por ejemplo, el archivo está abierto en otro programa), ciérralo y toca «Guardar en la carpeta» en Registros → Cortes. «Abrir carpeta» la abre en el Explorador. Con la 1.0.1 el PDF se baja como en un navegador. |
 | La app no abre el POS | «Sin internet, reintentando…» vuelve sola. Si no, `Ctrl`+`Shift`+`M` → Recargar. |
 | No imprime nada directo | Siempre queda el navegador: el botón «Imprimir con el navegador» abre el diálogo de siempre. |
 | Reimprimir sin internet | En la pantalla «Sin internet»: «Reimprimir el último ticket» (sale marcado como reimpresión). |

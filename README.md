@@ -28,7 +28,10 @@ variable de entorno al compilar; ver `android/LEEME.md`).
 - Electron: `contextIsolation`, sin `nodeIntegration`, `sandbox`, preload con `contextBridge`, y cada
   `ipcMain` revisa el origen de quien llama. Capacitor: el plugin revisa la URL del WebView.
 - El puente no da acceso a archivos ni a comandos del sistema: sólo imprimir, cajón, diagnóstico,
-  ajustes del aparato y actualización.
+  ajustes del aparato y actualización. **Única excepción (Windows 1.0.2):** `MorphiqApp.archivos`
+  guarda el PDF de un corte y abre su carpeta, con tres cerrojos: sólo PDF (firma `%PDF-` y tope de
+  20 MiB), sólo `Documentos\POS Don Poncho\Cortes\AAAA-MM\` (la página no da nombre ni ruta: la app
+  arma `Corte-<folio>-<fecha>.pdf` y comprueba que quede dentro) y sólo desde el origen de producción.
 - En las apps publicadas las herramientas de desarrollador están apagadas.
 
 Cómo instalar y configurar cada aparato: [`INSTALAR.md`](INSTALAR.md).

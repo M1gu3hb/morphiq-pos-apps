@@ -24,6 +24,8 @@ const METODOS = [
   'imprimir', 'abrirCajon', 'paginaDePrueba', 'estado', 'reimprimirUltimo', 'ultimoTicket',
   'buscarActualizacion', 'instalarActualizacion', 'modoLigero', 'abrirPos', 'abrirDiagnostico',
 ];
+/** Lo que esta app sabe hacer además del contrato base (una 1.0.1 no trae esta lista): `archivos` = 1.0.2. */
+const CAPACIDADES = ['archivos'];
 
 function seExpone() {
   try {
@@ -58,6 +60,12 @@ function crearPuente() {
 
   const puente = { contrato: 1 };
   for (const metodo of METODOS) puente[metodo] = (...argumentos) => llamar(metodo, argumentos);
+  puente.capacidades = Object.freeze([...CAPACIDADES]);
+  // `abrirCarpeta` no reenvía argumentos: ni siquiera viajan por el IPC.
+  puente.archivos = Object.freeze({
+    guardar: (datos) => llamar('archivos.guardar', [datos]),
+    abrirCarpeta: () => llamar('archivos.abrirCarpeta', []),
+  });
   puente.escuchar = (evento, alLlegar) => {
     if (!oyentes.has(evento) || typeof alLlegar !== 'function') {
       throw rechazo('ARGUMENTOS', `Evento desconocido: ${String(evento)}`);
