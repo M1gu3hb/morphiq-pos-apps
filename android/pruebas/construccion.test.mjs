@@ -3,7 +3,7 @@
  *  - la APK `release` NUNCA es depurable ni abre el WebView a `chrome://inspect`;
  *  - la de depuración es otra app (otro paquete, otro nombre) y su archivo dice «depuracion»;
  *  - construir la de depuración jamás toca `android.json` ni pide la firma;
- *  - 1.0.1 (código 3) es más nueva que 1.0.0 (código 2) y así sale en `android.json`.
+ *  - 1.0.2 (código 4) es más nueva que 1.0.1 (código 3) y 1.0.0 (código 2) y así sale en `android.json`.
  * Son comprobaciones de texto sobre el código real (si alguien lo cambia, fallan). Corre con `npm run probar:puente`.
  */
 import assert from 'node:assert/strict';
@@ -85,8 +85,8 @@ test('la depuración se llama «… · depuración» y su acceso directo apunta 
 });
 
 test('el archivo de depuración dice «depuracion» y no se parece al bueno', () => {
-  assert.equal(nombreDelArchivo(CLIENTE), 'POS-Don-Poncho-1.0.1.apk');
-  assert.equal(nombreDelArchivoDeDepuracion(CLIENTE), 'POS-Don-Poncho-1.0.1-depuracion.apk');
+  assert.equal(nombreDelArchivo(CLIENTE), 'POS-Don-Poncho-1.0.2.apk');
+  assert.equal(nombreDelArchivoDeDepuracion(CLIENTE), 'POS-Don-Poncho-1.0.2-depuracion.apk');
   assert.notEqual(nombreDelArchivoDeDepuracion(CLIENTE), nombreDelArchivo(CLIENTE));
 });
 
@@ -103,12 +103,12 @@ test('construir la depuración no pide firma, no toca android.json y no se publi
   assert.doesNotMatch(cuerpo, /nombreDelArchivo\(cliente\)(?!De)/, 'no usa el nombre del archivo bueno');
 });
 
-test('1.0.1 con versionCode 3 es la versión que sale, y android.json la anuncia', () => {
-  assert.deepEqual(VERSION, { version: '1.0.1', versionCode: 3 });
+test('1.0.2 con versionCode 4 es la versión que sale, y android.json la anuncia', () => {
+  assert.deepEqual(VERSION, { version: '1.0.2', versionCode: 4 });
   const ficha = fichaDeActualizacion(CLIENTE, nombreDelArchivo(CLIENTE), 'a'.repeat(64), 'notas');
-  assert.equal(ficha.versionCode, 3);
-  assert.equal(ficha.version, '1.0.1');
-  assert.equal(ficha.apk, 'POS-Don-Poncho-1.0.1.apk');
+  assert.equal(ficha.versionCode, 4);
+  assert.equal(ficha.version, '1.0.2');
+  assert.equal(ficha.apk, 'POS-Don-Poncho-1.0.2.apk');
   assert.ok(ficha.versionCode > 2, 'más nueva que la 1.0.0 (código 2)');
 });
 

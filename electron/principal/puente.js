@@ -22,15 +22,18 @@ function urlDelQueLlama(evento) {
  *   ipcMain: import('electron').IpcMain,
  *   permitido: (url: string | null) => boolean,
  *   metodos: Record<string, (...args: unknown[]) => unknown>,
+ *   reglas?: Record<string, (url: string | null) => boolean>,
  *   registrar: (mensaje: string) => void,
- * }} deps
+ * }} deps `reglas`: una comprobación EXTRA de origen para ciertos métodos (se suma a `permitido`, no la
+ * reemplaza). Hoy: `archivos.*` sólo desde la página de producción, no desde las pantallas internas.
  * @returns {() => void} quita los manejadores
  */
-function registrarPuente({ ipcMain, permitido, metodos, registrar }) {
+function registrarPuente({ ipcMain, permitido, metodos, reglas = {}, registrar }) {
   for (const [nombre, funcion] of Object.entries(metodos)) {
+    const reglaExtra = reglas[nombre];
     ipcMain.handle(`${PREFIJO}${nombre}`, async (evento, ...argumentos) => {
       const url = urlDelQueLlama(evento);
-      if (!permitido(url)) {
+      if (!permitido(url) || (reglaExtra !== undefined && !reglaExtra(url))) {
         registrar(`ORIGEN rechazado en ${nombre}: ${String(url).slice(0, 120)}`);
         return { ok: false, error: ERROR_ORIGEN };
       }

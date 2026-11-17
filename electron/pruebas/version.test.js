@@ -1,5 +1,5 @@
 'use strict';
-/** La 1.0.1 se instala ENCIMA de la 1.0.0 con la actualización automática: tiene que contar como más nueva. */
+/** La 1.0.2 se instala ENCIMA de la 1.0.1 (y de la 1.0.0) con la actualización automática: tiene que contar como más nueva. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const EventEmitter = require('node:events');
@@ -21,9 +21,29 @@ function actualizadorReal(versionInstalada) {
   return u;
 }
 
-test('version.json: es la 1.0.1 y su versionCode sube (no se puede reusar uno ya publicado)', () => {
-  assert.equal(version, '1.0.1');
-  assert.ok(Number.isInteger(versionCode) && versionCode > 2, `versionCode ${versionCode}`);
+test('version.json: es la 1.0.2 y su versionCode sube (no se puede reusar uno ya publicado: 1.0.1 fue el 3)', () => {
+  assert.equal(version, '1.0.2');
+  assert.equal(versionCode, 4);
+});
+
+test('electron-updater: una 1.0.1 instalada ve la 1.0.2 como más nueva (y la 1.0.0 también); la 1.0.2 ya no', async () => {
+  assert.equal(await actualizadorReal('1.0.1').isUpdateAvailable({ version }), true);
+  assert.equal(await actualizadorReal('1.0.0').isUpdateAvailable({ version }), true);
+  assert.equal(await actualizadorReal(version).isUpdateAvailable({ version }), false);
+});
+
+test('actualizador: una 1.0.1 instalada ve la 1.0.2 como versión nueva y la descarga', async () => {
+  const motor = new EventEmitter();
+  motor.setFeedURL = () => {};
+  motor.checkForUpdates = async () => {
+    const hay = await actualizadorReal('1.0.1').isUpdateAvailable({ version });
+    motor.emit(hay ? 'update-available' : 'update-not-available', hay ? { version } : {});
+    return { isUpdateAvailable: hay };
+  };
+  const cliente = { nombre: 'POS Don Poncho', releases: { repo: 'a/b', canal: 'c' } };
+  const a = crearActualizador({ autoUpdater: motor, versionActual: '1.0.1', cliente, alCambiar: () => {}, preguntarReinicio: async () => false });
+  const r = await a.buscar();
+  assert.deepEqual([r.estado, r.versionActual, r.versionNueva], ['descargando', '1.0.1', '1.0.2']);
 });
 
 test('electron-updater: la 1.0.1 es más nueva que la 1.0.0, y no al revés ni igual', async () => {
@@ -33,7 +53,7 @@ test('electron-updater: la 1.0.1 es más nueva que la 1.0.0, y no al revés ni i
   assert.equal(await actualizadorReal('1.0.9').isUpdateAvailable({ version: '1.0.10' }), true, 'compara por números, no por texto');
 });
 
-test('actualizador: una 1.0.0 instalada ve la 1.0.1 como versión nueva y la descarga', async () => {
+test('actualizador: una 1.0.0 instalada ve la versión actual (1.0.2) como nueva y la descarga', async () => {
   const motor = new EventEmitter();
   motor.setFeedURL = () => {};
   const instalada = '1.0.0';
@@ -46,5 +66,5 @@ test('actualizador: una 1.0.0 instalada ve la 1.0.1 como versión nueva y la des
   const cliente = { nombre: 'POS Don Poncho', releases: { repo: 'a/b', canal: 'c' } };
   const a = crearActualizador({ autoUpdater: motor, versionActual: instalada, cliente, alCambiar: () => {}, preguntarReinicio: async () => false });
   const r = await a.buscar();
-  assert.deepEqual([r.estado, r.versionActual, r.versionNueva], ['descargando', '1.0.0', '1.0.1']);
+  assert.deepEqual([r.estado, r.versionActual, r.versionNueva], ['descargando', '1.0.0', version]);
 });

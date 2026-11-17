@@ -208,6 +208,10 @@ async function correrHumo({ electron, cliente, rutas, almacen, registrar, crearA
       try { a.escuchar('nada', () => {}); salida.malEvento = 'no rechazó'; } catch (e) { salida.malEvento = e.message; }
       const quitar = a.escuchar('modo-ligero', () => {});
       salida.quitar = typeof quitar;
+      // 1.0.2 · archivos: sólo se mira la forma y un rechazo que NO escribe nada (jamás abrirCarpeta: abriría el Explorador).
+      salida.capacidades = [...a.capacidades];
+      salida.archivos = Object.keys(a.archivos).sort();
+      salida.noEsPdf = await a.archivos.guardar({ folio: 'HUMO-1', fecha: '2026-11-16', base64: 'aG9sYQ==' });
       return salida;
     })()`);
     exigir(r.plataforma === 'windows', 'plataforma()');
@@ -222,6 +226,8 @@ async function correrHumo({ electron, cliente, rutas, almacen, registrar, crearA
     exigir(r.ultimo === null, 'ultimoTicket debía ser null');
     exigir(r.malUso === 'ARGUMENTOS', `un mal uso debe rechazar con ARGUMENTOS (fue ${r.malUso})`);
     exigir(/Evento desconocido/.test(r.malEvento) && r.quitar === 'function', `escuchar(): ${r.malEvento} / ${r.quitar}`);
+    exigir(r.capacidades.join() === 'archivos' && r.archivos.join() === 'abrirCarpeta,guardar', `archivos: ${JSON.stringify([r.capacidades, r.archivos])}`);
+    exigir(r.noEsPdf.ok === false && r.noEsPdf.codigo === 'NO_ES_PDF', `guardar de un no-PDF: ${JSON.stringify(r.noEsPdf)}`);
     return r;
   });
 
