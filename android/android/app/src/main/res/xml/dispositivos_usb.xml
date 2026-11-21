@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Qué aparatos USB puede abrir esta app («Usar siempre» al dar el permiso del USB).
+
+  Con este filtro, el diálogo de permiso que muestra Android al pedir acceso a una impresora trae la casilla
+  «Usar de forma predeterminada para este dispositivo USB»: si se marca, Android recuerda el permiso de ESE
+  aparato y se lo vuelve a dar a la app cada vez que el aparato se conecta (incluido el arranque del equipo),
+  sin volver a preguntar. Android sólo ofrece la casilla si la app declara aquí el aparato.
+
+  · class="7": impresoras USB estándar (clase «Printer»).
+  · class="255": clase específica del fabricante; es lo que usan muchas impresoras térmicas y POS (la app ya
+    las trata como imprimibles en `Dispositivos.kt`). Es más amplio: un celular o un lector de códigos
+    conectado también abre la app, sin hacer nada más (la app ya está abierta en el mostrador).
+
+  Cuando se sepa el vendor-id y el product-id de la impresora del iMin (Diagnóstico → impresoras USB los
+  muestra en decimal), se puede acotar a ese aparato con
+  <usb-device vendor-id="…" product-id="…" /> y quitar la clase 255.
+-->
+<resources>
+    <usb-device class="7" />
+    <usb-device class="255" />
+</resources>

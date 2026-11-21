@@ -43,6 +43,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- DP-24 · Impresora USB: con este filtro, el diálogo de permiso del USB ofrece «Usar de forma
+                 predeterminada para este dispositivo USB»; marcada, Android recuerda el permiso de esa impresora y
+                 se lo da a la app cada vez que se conecta (o al arrancar el equipo). Qué aparatos: xml/dispositivos_usb. -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/dispositivos_usb" />
+
             <!-- Mantener presionado el ícono → «Diagnóstico». -->
             <meta-data
                 android:name="android.app.shortcuts"
