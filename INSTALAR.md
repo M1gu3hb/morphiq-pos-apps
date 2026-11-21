@@ -50,6 +50,12 @@ Necesita Android 6 o más nuevo.
 **Impresora por USB:** al conectarla (o al tocar «Dar permiso» en Diagnóstico) Android pregunta
 «¿Permitir que POS Don Poncho acceda al dispositivo USB?». Marca **«Usar siempre»** y acepta.
 
+**Si el aparato (iMin) vuelve a pedir el permiso cada que se prende** (prueba de 5 minutos, APK nueva con el filtro USB):
+1. Conecta la impresora y, en la Caja, imprime algo: si falta el permiso sale «Dar permiso a la impresora».
+2. Tócalo. En el diálogo de Android marca **«Usar de forma predeterminada para este dispositivo USB»** y acepta. Si esa casilla NO aparece, la impresora no cuadra con el filtro (`res/xml/dispositivos_usb.xml`): anota su vendor y product de Diagnóstico y avísame.
+3. Reinicia el aparato (apágalo y préndelo) y vuelve a imprimir. Si imprime sin preguntar, quedó. Si pide el permiso otra vez, Android no vuelve a «conectar» esa impresora al arrancar: se queda el botón «Dar permiso a la impresora» del aviso (un toque).
+4. Desinstalar la app o «Borrar datos» borra el permiso recordado; reinstalar obliga a repetir el paso 2.
+
 **Impresora por Bluetooth** (también la integrada de los POS tipo Sunmi, «InnerPrinter»):
 
 1. Ajustes de Android → Bluetooth → enciéndelo y **empareja** la impresora (el código suele ser

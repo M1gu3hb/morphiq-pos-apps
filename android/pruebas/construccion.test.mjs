@@ -117,3 +117,32 @@ test('el appId y el nombre de la app buena no cambian (la 1.0.1 se instala ENCIM
   assert.doesNotMatch(bloque(GRADLE, 'defaultConfig'), /applicationIdSuffix/);
   assert.match(GRADLE, /applicationId cliente\.appId/);
 });
+
+test('DP-24 · «Usar siempre» del USB: la actividad declara USB_DEVICE_ATTACHED con su filtro de dispositivos', () => {
+  const manifiesto = leer('android', 'app', 'src', 'main', 'AndroidManifest.xml').replaceAll('\r\n', '\n');
+  const desde = manifiesto.indexOf('<activity\n');
+  const actividad = manifiesto.slice(desde, manifiesto.indexOf('</activity>', desde));
+  assert.match(actividad, /android:name="\.MainActivity"/);
+  assert.match(actividad, /<action android:name="android\.hardware\.usb\.action\.USB_DEVICE_ATTACHED" \/>/);
+  assert.match(
+    actividad,
+    /<meta-data\s+android:name="android\.hardware\.usb\.action\.USB_DEVICE_ATTACHED"\s+android:resource="@xml\/dispositivos_usb" \/>/,
+  );
+  assert.match(actividad, /android\.intent\.action\.MAIN/, 'sigue siendo la pantalla de inicio de la app');
+  assert.match(actividad, /android:exported="true"/);
+  assert.match(actividad, /android:launchMode="singleTask"/, 'conectar la impresora no abre una segunda ventana');
+});
+
+test('DP-24 · el filtro de dispositivos cubre impresoras (clase 7) y las de clase del fabricante (255)', () => {
+  const filtro = leer('android', 'app', 'src', 'main', 'res', 'xml', 'dispositivos_usb.xml');
+  const sinComentarios = filtro.replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(sinComentarios, /<resources>[\s\S]*<\/resources>/);
+  const usb = [...sinComentarios.matchAll(/<usb-device ([^>]*)\/>/g)].map((m) => m[1].trim());
+  assert.deepEqual(usb, ['class="7"', 'class="255"']);
+});
+
+test('DP-24 · conectar la impresora no recarga el POS (onNewIntent sólo atiende «Diagnóstico»)', () => {
+  const nuevo = MAIN.slice(MAIN.indexOf('override fun onNewIntent'), MAIN.indexOf('override fun onWindowFocusChanged'));
+  assert.match(nuevo, /intent\.action == ACCION_DIAGNOSTICO/);
+  assert.doesNotMatch(nuevo, /cargar\(|irAlInicio|abrirPos/);
+});
